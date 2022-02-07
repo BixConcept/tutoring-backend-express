@@ -4,17 +4,19 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
 const dotenv = require("dotenv");
 const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
+const bcrypt = require("bcrypt");
 
 import { v4 as uuidv4 } from "uuid";
 
+// funktioniert
 const app = express();
 const PORT = 5000 || process.env.PORT;
 dotenv.config();
 
+// hallo
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -88,14 +90,14 @@ app.get("/find", (req: any, res: any) => {
 
 // Account erstellen
 app.post("/user/register", (req: any, res: any) => {
-  const { email } = req.body;
+  const { email, password } = req.body;
 
   if (!checkIfEmailIsValid(email)) return res.send({ msg: "Invalide E-Mail" });
-
   // random irgendetwas...
   const hash = uuidv4();
+  const pw = bcrypt.hashSync(password, 12);
 
-  let sqlCommand: string = `INSERT INTO users (email, hash) VALUES('${email}','${hash}')`;
+  let sqlCommand: string = `INSERT INTO users (email, password, hash) VALUES('${email}','${pw}','${hash}')`;
   db.query(sqlCommand, (err: any) => {
     if (err) return res.send(err);
     return res.send({ msg: "Account wurde erstellt", code: 200 });
@@ -115,7 +117,17 @@ app.post("/user/verify", (req: any, res: any) => {
 
 // Login
 app.post("/user/login", (req: any, res: any) => {
-  // ? TODO
+  const { email, password } = req.body;
+    db.query("SELECT * FROM users WHERE email = ?", [email], (error: any, results: any, fields: any) => {
+        if (error) return res.send(error);
+        if (results.length > 0) {
+            const comparision = bcrypt.compareSync(password, results[0].passwordHash);
+            if (comparision) {
+                // send session sachen…
+                res.send({msg: "Successfully logged in"})
+            } else return res.send({code: 204, msg: "Falsch>"})
+        } else return res.send({code: 206, msg: "Nutzer*IN nicht gefunden"}) 
+    })
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
