@@ -95,7 +95,7 @@ app.post("/user/register", (req: any, res: any) => {
   if (!checkIfEmailIsValid(email)) return res.send({ msg: "Invalide E-Mail" });
   // random irgendetwas...
   const hash = uuidv4();
-  const pw = bcrypt.hashSync(password, 12);
+  const pw = bcrypt.hash(password, 12);
 
   let sqlCommand: string = `INSERT INTO users (email, password, hash) VALUES('${email}','${pw}','${hash}')`;
   db.query(sqlCommand, (err: any) => {
@@ -121,7 +121,7 @@ app.post("/user/login", (req: any, res: any) => {
     db.query("SELECT * FROM users WHERE email = ?", [email], (error: any, results: any, fields: any) => {
         if (error) return res.send(error);
         if (results.length > 0) {
-            const comparision = bcrypt.compareSync(password, results[0].passwordHash);
+            const comparision = bcrypt.compare(password, results[0].passwordHash);
             if (comparision) {
                 // send session sachen…
                 res.send({msg: "Successfully logged in"})
