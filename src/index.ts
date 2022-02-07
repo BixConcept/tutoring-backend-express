@@ -4,9 +4,10 @@ const mysql = require("mysql");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const dotenv = require("dotenv");
-const app = express();
+import {v4 as uuidv4} from 'uuid';
 
-const PORT = 5000;
+const app = express();
+const PORT = 5000 || process.env.PORT;
 dotenv.config();
 app.use(cors());
 
@@ -37,7 +38,7 @@ app.get("/", (req: any, res: any) => {
 // Nachhilfelehrer finden
 app.get("/find", (req: any, res: any) => {
   const { subject, grade } = req.body;
-  let sqlCommand: string = `SELECT * FROM angebote WHERE subject = ('${subject}') AND grade >= ('${grade}')`;
+  let sqlCommand: string = `SELECT * FROM users INNER JOIN angebote ON subject = ('${subject}') AND grade >= ('${grade}')`;
   db.query(sqlCommand, (err: any, results: any) => {
     if (err) return res.send(err);
     return res.json({ data: results });
@@ -45,34 +46,45 @@ app.get("/find", (req: any, res: any) => {
 });
 
 const checkIfEmailIsValid = (email: string): boolean => {
-    if (email.split("@")[1] === "gymhaan.de" && email.split("@")[0].split(".")[0].length > 0 && email.split("@")[0].split(".")[1].length > 0) return true;
-    return false;
-}
+  if (
+    email.split("@")[1] === "gymhaan.de" &&
+    email.split("@")[0].split(".")[0].length > 0 &&
+    email.split("@")[0].split(".")[1].length > 0
+  )
+    return true;
+  return false;
+};
 
 // Account erstellen
-app.post("/user/create", (req: any, res: any) => {
-    const {email} = req.body;
-    
-    if (!checkIfEmailIsValid(email)) return res.send({msg: "Invalide E-Mail"});
-    
-    let sqlCommand: string = `INSERT INTO users (email) VALUES('${email}')`;
-    db.query(sqlCommand, (err: any) => {
-        if (err) return res.send(err);
-        return res.send({msg: "Account wurde erstellt", code: 200})
-    })
+app.post("/user/register", (req: any, res: any) => {
+  const { email } = req.body;
 
-    // TODO: hash oder so erzeugen fuers verifizieren
+  if (!checkIfEmailIsValid(email)) return res.send({ msg: "Invalide E-Mail" });
+
+  // random irgendetwas...
+  const hash = uuidv4();
+
+  let sqlCommand: string = `INSERT INTO users (email, hash) VALUES('${email}','${hash}')`;
+  db.query(sqlCommand, (err: any) => {
+    if (err) return res.send(err);
+    return res.send({ msg: "Account wurde erstellt", code: 200 });
+  });
 });
 
-// Account verifizieren
+// Account verifizieren (schlecht hat ja auch ayberk gemacht)
 app.post("/user/verify", (req: any, res: any) => {
-    const {email, hash} = req.body;
-    let sqlCommand = `UPDATE users SET authorized = 1 WHERE email = '${email}' AND hash = '${hash}'`;
-    db.query(sqlCommand, (err: any) => {
-        if (err) return res.send(err);
-        return res.send({msg: "Account wurde verifiziert", code: 200});
-    })
+  const { email, hash } = req.body;
+  let sqlCommand = `UPDATE users SET authorized = 1 WHERE email = '${email}' AND hash = '${hash}'`;
+  db.query(sqlCommand, (err: any) => {
+    if (err) return res.send(err);
+    return res.send({ msg: "Account wurde verifiziert", code: 200 });
+  });
+});
+
+// Login
+app.post("/user/login", (req: any, res: any) => {
+    // ? TODO
 })
 
 
-app.listen(8080, () => console.log("server running on port 8080"));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
