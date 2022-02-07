@@ -1,15 +1,23 @@
+// @ts-check
+
 // Imports
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const dotenv = require("dotenv");
-import {v4 as uuidv4} from 'uuid';
+const bodyParser = require("body-parser");
+const nodemailer = require("nodemailer");
+
+import { v4 as uuidv4 } from "uuid";
 
 const app = express();
 const PORT = 5000 || process.env.PORT;
 dotenv.config();
+
 app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Daten aus der .env Datei
 const host = process.env.DB_HOST;
@@ -31,6 +39,39 @@ db.connect((err: any) => {
   else console.log("Connected to database!");
 });
 
+// FUNCTIONS
+
+const checkIfEmailIsValid = (email: string): boolean => {
+  if (
+    email.split("@")[1] === "gymhaan.de" &&
+    email.split("@")[0].split(".")[0].length > 0 &&
+    email.split("@")[0].split(".")[1].length > 0
+  )
+    return true;
+  return false;
+};
+
+
+async function sendVerificationEmail(email: string, hash: string) {
+
+    const transporter = nodemailer.createTransport({
+        host: "smtp.3nt3.de",
+        port: 465,
+        secure: true,
+        auth: {
+            user: "nachhilfebot@3nt3.de",
+            pass: process.env.EMAIL_PW,
+        },
+    })
+
+    transporter.sendMail({
+        from: "nachhilfebot@3nt3.de",
+        to: email,
+        subject: "Account bestätigen",
+        html: `<h1>Account bestätigen</h1><br /><a href=api.3nt3.de/user/verify?email=${email}&hash=${hash}>Hier klicken</a>`
+    })}
+
+// ROUTES
 app.get("/", (req: any, res: any) => {
   res.send("...");
 });
@@ -44,16 +85,6 @@ app.get("/find", (req: any, res: any) => {
     return res.json({ data: results });
   });
 });
-
-const checkIfEmailIsValid = (email: string): boolean => {
-  if (
-    email.split("@")[1] === "gymhaan.de" &&
-    email.split("@")[0].split(".")[0].length > 0 &&
-    email.split("@")[0].split(".")[1].length > 0
-  )
-    return true;
-  return false;
-};
 
 // Account erstellen
 app.post("/user/register", (req: any, res: any) => {
@@ -69,6 +100,7 @@ app.post("/user/register", (req: any, res: any) => {
     if (err) return res.send(err);
     return res.send({ msg: "Account wurde erstellt", code: 200 });
   });
+  sendVerificationEmail(email, hash);
 });
 
 // Account verifizieren (schlecht hat ja auch ayberk gemacht)
@@ -83,8 +115,7 @@ app.post("/user/verify", (req: any, res: any) => {
 
 // Login
 app.post("/user/login", (req: any, res: any) => {
-    // ? TODO
-})
-
+  // ? TODO
+});
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
