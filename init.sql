@@ -1,6 +1,6 @@
 -- User Tabelle erzeugen
 CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
-    `id` INT NOT NULL,
+    `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
     `phone_number` VARCHAR(20) NULL,
@@ -38,3 +38,10 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
     `grade` INT NOT NULL,
     PRIMARY KEY (`id`)
 );
+
+-- verification_codes table
+CREATE TABLE IF NOT EXISTS `tutoring`.`verification_code` (
+    `id` VARCHAR(64) NOT NULL,
+    `user_id` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id`)
+)

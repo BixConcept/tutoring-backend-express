@@ -9,7 +9,7 @@ import crypto from "crypto";
 import fs from "fs";
 
 const app = express();
-const PORT = 5000 || process.env.PORT;
+const PORT = 5001 || process.env.PORT;
 dotenv.config();
 
 // APP USE
@@ -38,7 +38,9 @@ fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
   data
     .toString()
     .split("\n\n")
-    .forEach((command) => db.execute(command, (err) => err ? console.log(err) : null));
+    .forEach((command) =>
+      db.execute(command, (err) => (err ? console.log(err) : null))
+    );
 });
 
 // check if email is a school given email
@@ -48,6 +50,7 @@ const checkEmailValidity = (email: string): boolean => {
 
 // Send a verification email
 async function sendVerificationEmail(code: string, email: string) {
+  // NOREPLY@GYMHAAN.DE
   const transporter = nodemailer.createTransport({
     host: "mail.3nt3.de",
     port: 465,
@@ -80,7 +83,7 @@ app.get("/find", async (req: express.Request, res: express.Response) => {
     SELECT
         *
     FROM
-        user
+        user, offer
     WHERE
         user.id = offer.user_id
         AND offer.subject_id = ? -- [request.subject:_id]
@@ -93,19 +96,49 @@ app.get("/find", async (req: express.Request, res: express.Response) => {
   });
 });
 
+// converts something like 'christian.lindner@tothemoon.de' to Christian Lindner
+const emailToName = (email: string): string => {
+  return email
+    .split("@")[0]
+    .split(".")
+    .map((x) => capitalizeWord(x))
+    .join(" ");
+};
+
+const capitalizeWord = (x: string): string => {
+  return x.charAt(0).toUpperCase() + x.slice(1);
+};
+
+const generateCode = (): string => {
+  return crypto.randomBytes(64).toString("hex").slice(0, 32);
+};
+
 // create account
 app.post("/user/register", (req: express.Request, res: express.Response) => {
-  const { email } = req.body;
+  const email: string = req.body.email;
+  const subjects: { [key: number]: number } = req.body.subjects;
 
-  if (!checkEmailValidity(email)) return res.send({ msg: "Invalide E-Mail" });
+  if (!checkEmailValidity(email))
+    return res.status(400).json({ msg: "invalid email" });
 
-  const sqlCommand: string = `INSERT INTO users (email) VALUES (?) RETURNING id`;
-  db.query(sqlCommand, [email], (err: any) => {
-    if (err) return res.send(err);
-    return res.json({ msg: "account was created" });
-  });
+  let id: number = 0;
+  const sqlCommand: string = `INSERT INTO user (email, name, auth, updated_at) VALUES(?, ?, 0, CURRENT_TIMESTAMP); SELECT LAST_INSERT_ID();`;
+  db.query(
+    sqlCommand,
+    [email, emailToName(email)],
+    (err: mysql.QueryError | null, results: any) => {
+      if (err) return res.json({ msg: "internal server error" }).status(500);
 
-  db.query("INSERT INTO verification_code (user_id, code) VALUES (?, ?)", []);
+      id = results[0].insertId;
+
+      return res.json({ msg: "account was created" });
+    }
+  );
+
+  db.query("INSERT INTO verification_code (id, user_id) VALUES (?, ?)", [
+    generateCode(),
+    id,
+  ]);
   // sendVerificationEmail(email, hash);
 });
 
@@ -160,8 +193,22 @@ app.get("/subjects", (req: express.Request, res: express.Response) => {
   );
 });
 
+app.get("/users", (req: express.Request, res: express.Response) => {
+  db.query(
+    "SELECT * FROM user",
+    (error: mysql.QueryError | null, results: any) => {
+      if (error) {
+        console.log(error);
+        return res.status(500).json({ msg: "internal server error" });
+      }
+
+      return res.json({ content: results });
+    }
+  );
+});
+
 app.get("/user/delete", (req: express.Request, res: express.Response) => {
   // VERIFY
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}🐹🐹`));
