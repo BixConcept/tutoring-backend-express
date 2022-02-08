@@ -75,23 +75,33 @@ app.get("/", (req: express.Request, res: express.Response) => {
 });
 
 // find tutor (englisch für "finde Lehrer*:_in")
-app.get("/find", async (req: express.Request, res: express.Response) => {
+app.post("/find", async (req: express.Request, res: express.Response) => {
   const subjectID: number = req.body.subject;
   const grade: number = req.body.grade;
 
   const query: string = `
     SELECT
-        *
+        user.id AS user_id,
+        offer.id AS offer_id,
+        user.name AS name,
+        user.email AS email,
+        offer.max_grade AS max_grade,
+        user.phone_number as phone_number,
+        user.misc
     FROM
         user, offer
     WHERE
         user.id = offer.user_id
         AND offer.subject_id = ? -- [request.subject:_id]
-        AND offer.grade >= ? -- [request.grade]
+        AND offer.max_grade <= ? -- [request.grade]
         AND user.auth = 1;`;
 
   db.query(query, [subjectID, grade], (err: any, results: any) => {
-    if (err) return res.json({ msg: "internal server error" }).status(500);
+    if (err) {
+      console.log(err);
+      res.json({ msg: "internal server error" }).status(500);
+      return;
+    }
     return res.json({ content: results });
   });
 });
