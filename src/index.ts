@@ -1,133 +1,145 @@
-// @ts-check
+import express from "express";
+import mysql from "mysql";
+import cors from "cors";
+import dotenv from "dotenv";
+import bodyParser from "body-parser";
+import nodemailer from "nodemailer";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 
-// Imports
-const express = require("express");
-const mysql = require("mysql");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const bodyParser = require("body-parser");
-const nodemailer = require("nodemailer");
-const bcrypt = require("bcrypt");
-
-import { v4 as uuidv4 } from "uuid";
-
-// funktioniert
 const app = express();
 const PORT = 5000 || process.env.PORT;
 dotenv.config();
 
-// hallo
+// APP USE
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Daten aus der .env Datei
-const host = process.env.DB_HOST;
-const user = process.env.DB_USER;
-const password = process.env.DB_PASSWORD;
-const database = process.env.DB_DATABASE;
-
 // Datenbank einstellen
 const db = mysql.createConnection({
-  host: host,
-  user: user,
-  password: password,
-  database: database,
+  host: process.env.DB_HOST,
+  user: process.env.DB_U,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 });
 
 // Verbinden
-db.connect((err: any) => {
+db.connect((err: mysql.MysqlError) => {
   if (err) console.log(err);
   else console.log("Connected to database!");
 });
 
 // FUNCTIONS
 
-const checkIfEmailIsValid = (email: string): boolean => {
-  if (
-    email.split("@")[1] === "gymhaan.de" &&
-    email.split("@")[0].split(".")[0].length > 0 &&
-    email.split("@")[0].split(".")[1].length > 0
-  )
-    return true;
-  return false;
+// check if email is a school given email
+const checkEmailValidity = (email: string): boolean => {
+  return /(.*)\.(.*)@gymhaan.de/.test(email);
 };
 
+// Send a verification email
+async function sendVerificationEmail(code: string, email: string) {
+  const transporter = nodemailer.createTransport({
+    host: "mail.3nt3.de",
+    port: 465,
+    secure: true,
+    auth: {
+      user: "nachhilfebot@3nt3.de",
+      pass: process.env.EMAIL_PW,
+    },
+  });
 
-async function sendVerificationEmail(email: string, hash: string) {
-
-    const transporter = nodemailer.createTransport({
-        host: "smtp.3nt3.de",
-        port: 465,
-        secure: true,
-        auth: {
-            user: "nachhilfebot@3nt3.de",
-            pass: process.env.EMAIL_PW,
-        },
-    })
-
-    transporter.sendMail({
-        from: "nachhilfebot@3nt3.de",
-        to: email,
-        subject: "Account bestätigen",
-        html: `<h1>Account bestätigen</h1><br /><a href=api.3nt3.de/user/verify?email=${email}&hash=${hash}>Hier klicken</a>`
-    })}
+  transporter.sendMail({
+    from: "nachhilfebot@3nt3.de",
+    to: email,
+    subject: "Account bestätigen",
+    html: `<h1>Account bestätigen</h1><br /><a href=api.3nt3.de/user/verify?code=${code}>Hier klicken</a>`,
+  });
+}
 
 // ROUTES
 app.get("/", (req: any, res: any) => {
-  res.send("...");
+  res.json(["/find", "/user/register", "/user/verify", "/user/login"]);
 });
 
-// Nachhilfelehrer finden
+// find tutor
 app.get("/find", (req: any, res: any) => {
   const { subject, grade } = req.body;
-  let sqlCommand: string = `SELECT * FROM users INNER JOIN angebote ON subject = ('${subject}') AND grade >= ('${grade}')`;
-  db.query(sqlCommand, (err: any, results: any) => {
+  const sqlCommand: string = `SELECT * FROM users INNER JOIN offers ON subject = ? AND grade >= ?`;
+  db.query(sqlCommand, [subject, grade], (err: any, results: any) => {
     if (err) return res.send(err);
     return res.json({ data: results });
   });
 });
 
-// Account erstellen
+// create account
 app.post("/user/register", (req: any, res: any) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
 
-  if (!checkIfEmailIsValid(email)) return res.send({ msg: "Invalide E-Mail" });
-  // random irgendetwas...
-  const hash = uuidv4();
-  const pw = bcrypt.hash(password, 12);
+  if (!checkEmailValidity(email)) return res.send({ msg: "Invalide E-Mail" });
 
-  let sqlCommand: string = `INSERT INTO users (email, password, hash) VALUES('${email}','${pw}','${hash}')`;
-  db.query(sqlCommand, (err: any) => {
+  const sqlCommand: string = `INSERT INTO users (email) VALUES (?) RETURNING id`;
+  db.query(sqlCommand, [email], (err: any) => {
     if (err) return res.send(err);
-    return res.send({ msg: "Account wurde erstellt", code: 200 });
+    return res.send({ msg: "account was created", code: 200 });
   });
-  sendVerificationEmail(email, hash);
+
+  db.query("INSERT INTO verification_code (user_id, code) VALUES (?, ?)", []);
+  // sendVerificationEmail(email, hash);
 });
 
 // Account verifizieren (schlecht hat ja auch ayberk gemacht)
 app.post("/user/verify", (req: any, res: any) => {
   const { email, hash } = req.body;
-  let sqlCommand = `UPDATE users SET authorized = 1 WHERE email = '${email}' AND hash = '${hash}'`;
-  db.query(sqlCommand, (err: any) => {
+  const sqlCommand = `UPDATE users SET authorized = 1 WHERE email = ? AND hash = ?`;
+  db.query(sqlCommand, [email, hash], (err: any) => {
     if (err) return res.send(err);
-    return res.send({ msg: "Account wurde verifiziert", code: 200 });
+    return res.send({ msg: "account was verified", code: 200 });
   });
 });
 
 // Login
-app.post("/user/login", (req: any, res: any) => {
+app.post("/user/login", (req: express.Request, res: express.Response) => {
   const { email, password } = req.body;
-    db.query("SELECT * FROM users WHERE email = ?", [email], (error: any, results: any, fields: any) => {
-        if (error) return res.send(error);
-        if (results.length > 0) {
-            const comparision = bcrypt.compare(password, results[0].passwordHash);
-            if (comparision) {
-                // send session sachen…
-                res.send({msg: "Successfully logged in"})
-            } else return res.send({code: 204, msg: "Falsch>"})
-        } else return res.send({code: 206, msg: "Nutzer*IN nicht gefunden"}) 
-    })
+
+  db.query(
+    "SELECT * FROM users WHERE email = ?",
+    [email],
+    async (error: any, results: any, fields: any) => {
+      if (error) return res.json({ msg: "internal server error" }).status(500);
+
+      if (results.length > 0) {
+        const comparision = await bcrypt.compare(
+          password,
+          results[0].passwordHash
+        );
+        if (comparision) {
+          // send session sachen…
+          res.json({ msg: "Successfully logged in", content: results[0] });
+        } else {
+          return res.json({ msg: "invaid credentials" }).status(401);
+        }
+      } else {
+        return res.json({ code: 401, msg: "user not found" });
+      }
+    }
+  );
+});
+
+// get all subjects
+app.get("/subjects", (req: express.Request, res: express.Response) => {
+  db.query(
+    "SELECT * FROM subjects",
+    (error: mysql.MysqlError, results: any, fields: mysql.FieldInfo[]) => {
+      if (error) {
+        return res.json("internal server error").status(500);
+      } else return res.json({ content: results }).status(200);
+    }
+  );
+});
+
+app.get("/user/delete", (req: express.Request, res: express.Response) => {
+  // VERIFY
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

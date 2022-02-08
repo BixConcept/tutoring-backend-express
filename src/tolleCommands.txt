@@ -1,0 +1,21 @@
+// MADE BY nicht niels
+Ich möchte Nachhilfe:
+Select * From Nachhilfe.user 
+where user.id = offer.user_id
+and offer.subject_id = [request.subject:_id]
+and offer.grade >= [request.grade] 
+and user.auth = 1
+Ich möchte Nachhilfe geben:
+Insert into ‘nachhilfe.offer‘ (id, user_id, subject_id, grade) values (NULL, [user.id], [subject_id], [grade])
+Vergleiche mit request:
+Select user.email from nachhilfe.user where offer.subject_id=request.subject_id
+and request.grade<= offer.grade
+verifizieren:
+Update nachhilfe.user
+set auth=1 where [user_id]
+Ich möchte keine Nachhilfe mehr geben:
+Delete from nachhilfe.offer where offer.user_id = [user_id]
+Trag mich in die Warteliste ein:
+Insert into nachhilfe.request (id, user_id, subject_id) values (NULL, [user_id], [subject_id])
+Trag mich aus der Warteliste aus:
+Delete from nachhilfe.request where request.user_id = [user_id]
