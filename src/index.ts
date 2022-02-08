@@ -1,11 +1,12 @@
 import express from "express";
-import mysql from "mysql";
+import mysql from "mysql2";
 import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import fs from "fs";
 
 const app = express();
 const PORT = 5000 || process.env.PORT;
@@ -19,18 +20,26 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Datenbank einstellen
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
-  user: process.env.DB_U,
+  user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
+  multipleStatements: true,
 });
 
 // Verbinden
-db.connect((err: mysql.MysqlError) => {
+db.connect((err: mysql.QueryError | null) => {
   if (err) console.log(err);
   else console.log("Connected to database!");
 });
 
-// FUNCTIONS
+// this reads the file which contains seperate sql statements seperated by a single empty line and executes them seperately.
+fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
+  if (err) return console.log(err);
+  data
+    .toString()
+    .split("\n\n")
+    .forEach((command) => db.execute(command, (err) => err ? console.log(err) : null));
+});
 
 // check if email is a school given email
 const checkEmailValidity = (email: string): boolean => {
@@ -57,23 +66,35 @@ async function sendVerificationEmail(code: string, email: string) {
   });
 }
 
-// ROUTES
-app.get("/", (req: any, res: any) => {
+// ROUTES (englisch für "Routen")
+app.get("/", (req: express.Request, res: express.Response) => {
   res.json(["/find", "/user/register", "/user/verify", "/user/login"]);
 });
 
-// find tutor
-app.get("/find", (req: any, res: any) => {
-  const { subject, grade } = req.body;
-  const sqlCommand: string = `SELECT * FROM users INNER JOIN offers ON subject = ? AND grade >= ?`;
-  db.query(sqlCommand, [subject, grade], (err: any, results: any) => {
-    if (err) return res.send(err);
-    return res.json({ data: results });
+// find tutor (englisch für "finde Lehrer*:_in")
+app.get("/find", async (req: express.Request, res: express.Response) => {
+  const subjectID: number = req.body.subject;
+  const grade: number = req.body.grade;
+
+  const query: string = `
+    SELECT
+        *
+    FROM
+        user
+    WHERE
+        user.id = offer.user_id
+        AND offer.subject_id = ? -- [request.subject:_id]
+        AND offer.grade >= ? -- [request.grade]
+        AND user.auth = 1;`;
+
+  db.query(query, [subjectID, grade], (err: any, results: any) => {
+    if (err) return res.json({ msg: "internal server error" }).status(500);
+    return res.json({ content: results });
   });
 });
 
 // create account
-app.post("/user/register", (req: any, res: any) => {
+app.post("/user/register", (req: express.Request, res: express.Response) => {
   const { email } = req.body;
 
   if (!checkEmailValidity(email)) return res.send({ msg: "Invalide E-Mail" });
@@ -81,20 +102,20 @@ app.post("/user/register", (req: any, res: any) => {
   const sqlCommand: string = `INSERT INTO users (email) VALUES (?) RETURNING id`;
   db.query(sqlCommand, [email], (err: any) => {
     if (err) return res.send(err);
-    return res.send({ msg: "account was created", code: 200 });
+    return res.json({ msg: "account was created" });
   });
 
   db.query("INSERT INTO verification_code (user_id, code) VALUES (?, ?)", []);
   // sendVerificationEmail(email, hash);
 });
 
-// Account verifizieren (schlecht hat ja auch ayberk gemacht)
-app.post("/user/verify", (req: any, res: any) => {
+// Account verifizieren
+app.post("/user/verify", (req: express.Request, res: express.Response) => {
   const { email, hash } = req.body;
   const sqlCommand = `UPDATE users SET authorized = 1 WHERE email = ? AND hash = ?`;
   db.query(sqlCommand, [email, hash], (err: any) => {
     if (err) return res.send(err);
-    return res.send({ msg: "account was verified", code: 200 });
+    return res.json({ msg: "account was verified" });
   });
 });
 
@@ -115,6 +136,7 @@ app.post("/user/login", (req: express.Request, res: express.Response) => {
         );
         if (comparision) {
           // send session sachen…
+
           res.json({ msg: "Successfully logged in", content: results[0] });
         } else {
           return res.json({ msg: "invaid credentials" }).status(401);
@@ -130,7 +152,7 @@ app.post("/user/login", (req: express.Request, res: express.Response) => {
 app.get("/subjects", (req: express.Request, res: express.Response) => {
   db.query(
     "SELECT * FROM subjects",
-    (error: mysql.MysqlError, results: any, fields: mysql.FieldInfo[]) => {
+    (error: mysql.QueryError, results: any, fields: mysql.Field[]) => {
       if (error) {
         return res.json("internal server error").status(500);
       } else return res.json({ content: results }).status(200);
