@@ -37,7 +37,7 @@ fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
   if (err) return console.log(err);
   data
     .toString()
-    .split("\n\n")
+    .split(";")
     .forEach((command) =>
       db.execute(command, (err) => (err ? console.log(err) : null))
     );
@@ -75,8 +75,9 @@ app.get("/", (req: express.Request, res: express.Response) => {
 });
 
 // find tutor (englisch für "finde Lehrer*:_in")
-app.post("/find", async (req: express.Request, res: express.Response) => {
-  const subjectID: number = req.body.subject;
+app.post("/find", (req: express.Request, res: express.Response) => {
+  console.log(req.body);
+  const subject: string = req.body.subject;
   const grade: number = req.body.grade;
 
   const query: string = `
@@ -86,22 +87,24 @@ app.post("/find", async (req: express.Request, res: express.Response) => {
         user.name AS name,
         user.email AS email,
         offer.max_grade AS max_grade,
-        user.phone_number as phone_number,
+        user.phone_number AS phone_number,
+        offer.subject AS subject,
         user.misc
     FROM
         user, offer
     WHERE
         user.id = offer.user_id
-        AND offer.subject_id = ? -- [request.subject:_id]
-        AND offer.max_grade <= ? -- [request.grade]
+        AND offer.subject = ?
+        AND offer.max_grade >= ?
         AND user.auth = 1;`;
 
-  db.query(query, [subjectID, grade], (err: any, results: any) => {
+  db.query(query, [subject, grade], (err: any, results: any) => {
     if (err) {
-      console.log(err);
+      console.log("find", err);
       res.json({ msg: "internal server error" }).status(500);
       return;
     }
+    console.log(results);
     return res.json({ content: results });
   });
 });

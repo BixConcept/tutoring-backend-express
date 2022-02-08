@@ -13,18 +13,11 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     PRIMARY KEY (`id`)
 );
 
--- subjects table
-CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
-    `id` INT NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(50) NOT NULL,
-    PRIMARY KEY (`id`)
-);
-
 -- offer table
 CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `user_id` INT NOT NULL,
-    `subject_id` INT NOT NULL,
+    `subject` VARCHAR(50) NOT NULL,
     `max_grade` INT NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
@@ -44,4 +37,4 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`verification_code` (
     `id` VARCHAR(64) NOT NULL,
     `user_id` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`id`)
-)
+);
