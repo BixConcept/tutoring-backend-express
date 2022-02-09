@@ -7,6 +7,7 @@ import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import fs from "fs";
+import { MysqlError } from "mysql";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -96,7 +97,7 @@ app.post("/find", (req: express.Request, res: express.Response) => {
         user.id = offer.user_id
         AND offer.subject = ?
         AND offer.max_grade >= ?
-        AND user.auth = 1;`;
+        `;
 
   db.query(query, [subject, grade], (err: any, results: any) => {
     if (err) {
@@ -129,29 +130,56 @@ const generateCode = (): string => {
 // create account
 app.post("/user/register", (req: express.Request, res: express.Response) => {
   const email: string = req.body.email;
-  const subjects: { [key: number]: number } = req.body.subjects;
+  const subjectsmaybe: { [key: string]: any } = req.body.subjects;
+  console.log(req.body);
+  const misc: string = req.body.misc;
+  const grade: number = req.body.grade;
+  // const 3
 
-  if (!checkEmailValidity(email))
+  let subjects: any = {};
+
+  Object.keys(subjectsmaybe).forEach((key) => {
+    subjects[key] = parseInt(subjectsmaybe[key]);
+  });
+
+  if (!checkEmailValidity(email) && !checkEmailValidity(email + "@gymhaan.de"))
     return res.status(400).json({ msg: "invalid email" });
 
-  let id: number = 0;
-  const sqlCommand: string = `INSERT INTO user (email, name, auth, updated_at) VALUES(?, ?, 0, CURRENT_TIMESTAMP); SELECT LAST_INSERT_ID();`;
+  const sqlCommand: string = `INSERT INTO user (email, name, auth, updated_at, misc, grade) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?); SELECT LAST_INSERT_ID();`;
   db.query(
     sqlCommand,
-    [email, emailToName(email)],
+    [email, emailToName(email), misc, grade],
     (err: mysql.QueryError | null, results: any) => {
-      if (err) return res.json({ msg: "internal server error" }).status(500);
+      if (err) {
+        console.log(err);
+        return res.json({ msg: "internal server error" }).status(500);
+      }
 
-      id = results[0].insertId;
+      let id: number = results[0].insertId;
+      console.log(id);
 
+      Object.keys(subjects).forEach((key: string) => {
+        const stmt: string = `INSERT INTO offer (user_id, subject, max_grade) VALUES (?, ?, ?)`;
+        db.execute(
+          stmt,
+          [id, key, subjects[key]],
+          (error: mysql.QueryError | null) => {
+            if (error) {
+              console.error(error);
+              // res.status(500).json({ msg: "internal server error" });
+              return;
+            }
+          }
+        );
+      });
       return res.json({ msg: "account was created" });
     }
   );
 
-  db.query("INSERT INTO verification_code (id, user_id) VALUES (?, ?)", [
-    generateCode(),
-    id,
-  ]);
+  // db.query("INSERT INTO verification_code (id, user_id) VALUES (?, ?)", [
+  //   generateCode(),
+  //   id,
+  // ]);
   // sendVerificationEmail(email, hash);
 });
 

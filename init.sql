@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     `email` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
     `phone_number` VARCHAR(20) NULL,
+    `grade` INT NOT NULL,
     `misc` TEXT NULL,
     `password_hash` VARCHAR(128) NULL,
     `auth` INT NOT NULL,
