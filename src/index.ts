@@ -73,7 +73,8 @@ async function sendVerificationEmail(code: string, email: string) {
     from: "nachhilfebot@3nt3.de",
     to: email,
     subject: "Nachhilfeplattform GymHaan - Account bestätigen",
-    html: `${code}`,
+    html: `<body><a href="http://localhost:5001/user/verify?code=${code}">Account verifizieren</a></body>`,
+    headers: { "Content-Type": "text/html" },
   };
 
   transporter.sendMail(
@@ -201,15 +202,28 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
 
 // Account verifizieren
 app.get("/user/verify", (req: express.Request, res: express.Response) => {
-  if (!req.params.code) {
+  const code = req.query.code;
+  console.log(code);
+  if (!code) {
     return res.status(401).json({ msg: "invalid code" });
   }
 
-  const sqlCommand = `UPDATE users SET authorized = 1 WHERE users.id = authorization_code.user_id AND authorization_code.id = ?`;
-  db.query(sqlCommand, [req.params.code], (err: any) => {
-    if (err) return res.status(401).json({ msg: "invalid code" });
-    return res.json({ msg: "account was verified" });
-  });
+  db.query(
+    "SELECT COUNT(1) FROM verification_code WHERE verification_code.id = ?;",
+    [code],
+    (err: any, results: any) => {
+      if (err) return res.status(401).json({ msg: "invalid code" });
+      if (!results[0]["COUNT(1)"]) {
+        return res.status(401).json({ msg: "invalid code" });
+      }
+
+      const sqlCommand = `UPDATE user, verification_code SET user.auth = 1 WHERE user.id = verification_code.user_id AND verification_code.id = ?`;
+      db.query(sqlCommand, [code], (err: any) => {
+        if (err) return res.status(401).json({ msg: "invalid code" });
+        return res.json({ msg: "account was verified" });
+      });
+    }
+  );
 });
 
 // Login
