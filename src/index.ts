@@ -13,7 +13,7 @@ import Handlebars from "handlebars";
 const app = express();
 const PORT = 5001 || process.env.PORT;
 dotenv.config();
-const HOST = "https://api.nachhilfe.3nt3.de";
+const HOST = "https://nachhilfe.3nt3.de/api";
 
 // APP USE
 app.use(cors());
@@ -71,7 +71,7 @@ async function sendVerificationEmail(code: string, email: string) {
 
   console.log(code, email);
 
-  fs.readFile("verification_email.html", (err, data) => {
+  fs.readFile("./src/verification_email.html", (err, data) => {
     if (err) return console.error(err);
     const template = Handlebars.compile(data.toString().replace("\n", ""));
 
