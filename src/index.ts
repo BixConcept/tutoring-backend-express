@@ -208,18 +208,32 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
     return res.status(401).json({ msg: "invalid code" });
   }
 
+  // check if there are any codes that match the one given
   db.query(
     "SELECT COUNT(1) FROM verification_code WHERE verification_code.id = ?;",
     [code],
     (err: any, results: any) => {
+      // if not, return error
       if (err) return res.status(401).json({ msg: "invalid code" });
+      console.log(results[0]["COUNT(1)"]);
       if (!results[0]["COUNT(1)"]) {
         return res.status(401).json({ msg: "invalid code" });
       }
 
+      // update the user record and set user.auth = 1
       const sqlCommand = `UPDATE user, verification_code SET user.auth = 1 WHERE user.id = verification_code.user_id AND verification_code.id = ?`;
       db.query(sqlCommand, [code], (err: any) => {
+        // I hope this checks for everything
         if (err) return res.status(401).json({ msg: "invalid code" });
+
+        // delete the verification code
+        // this is not critical, so we don't check for errors
+        // the only consequence this could have is spamming the database
+        db.execute(
+          "DELETE FROM verification_code WHERE verification_code.id = ?",
+          [code]
+        );
+
         return res.json({ msg: "account was verified" });
       });
     }
