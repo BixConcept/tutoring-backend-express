@@ -50,7 +50,12 @@ fs_1.default.readFile("init.sql", (err, data) => {
     data
         .toString()
         .split(";")
-        .forEach((command) => db.execute(command, (err) => (err ? console.log(err) : null)));
+        .forEach((command) => db.execute(command, (err) => {
+        // if there is an error that is relevant
+        if (err && err.code !== "ER_EMPTY_QUERY") {
+            console.error(err);
+        }
+    }));
 });
 // check if email is a school given email
 const checkEmailValidity = (email) => {
@@ -69,11 +74,16 @@ function sendVerificationEmail(code, email) {
                 pass: process.env.EMAIL_PW,
             },
         });
-        transporter.sendMail({
+        console.log(code, email);
+        const mailOptions = {
             from: "nachhilfebot@3nt3.de",
             to: email,
-            subject: "Account bestätigen",
-            html: `<h1>Account bestätigen</h1><br /><a href=api.3nt3.de/user/verify?code=${code}>Hier klicken</a>`,
+            subject: "Nachhilfeplattform GymHaan - Account bestätigen",
+            html: `<body><a href="http://localhost:5001/user/verify?code=${code}">Account verifizieren</a></body>`,
+            headers: { "Content-Type": "text/html" },
+        };
+        transporter.sendMail(mailOptions, (err, info) => {
+            console.log(err, info);
         });
     });
 }
@@ -139,7 +149,7 @@ app.post("/user/register", (req, res) => {
     Object.keys(subjectsmaybe).forEach((key) => {
         subjects[key] = parseInt(subjectsmaybe[key]);
     });
-    if (!checkEmailValidity(email))
+    if (!checkEmailValidity(email) && !checkEmailValidity(email + "@gymhaan.de"))
         return res.status(400).json({ msg: "invalid email" });
     const sqlCommand = `INSERT INTO user (email, name, auth, updated_at, misc, grade) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?); SELECT LAST_INSERT_ID();`;
     db.query(sqlCommand, [email, emailToName(email), misc, grade], (err, results) => {
@@ -159,22 +169,43 @@ app.post("/user/register", (req, res) => {
                 }
             });
         });
+        let code = generateCode();
+        db.query("INSERT INTO verification_code (id, user_id) VALUES (?, ?)", [
+            code,
+            id,
+        ]);
+        sendVerificationEmail(code, email);
         return res.json({ msg: "account was created" });
     });
-    // db.query("INSERT INTO verification_code (id, user_id) VALUES (?, ?)", [
-    //   generateCode(),
-    //   id,
-    // ]);
-    // sendVerificationEmail(email, hash);
 });
 // Account verifizieren
-app.post("/user/verify", (req, res) => {
-    const { email, hash } = req.body;
-    const sqlCommand = `UPDATE users SET authorized = 1 WHERE email = ? AND hash = ?`;
-    db.query(sqlCommand, [email, hash], (err) => {
+app.get("/user/verify", (req, res) => {
+    const code = req.query.code;
+    console.log(code);
+    if (!code) {
+        return res.status(401).json({ msg: "invalid code" });
+    }
+    // check if there are any codes that match the one given
+    db.query("SELECT COUNT(1) FROM verification_code WHERE verification_code.id = ?;", [code], (err, results) => {
+        // if not, return error
         if (err)
-            return res.send(err);
-        return res.json({ msg: "account was verified" });
+            return res.status(401).json({ msg: "invalid code" });
+        console.log(results[0]["COUNT(1)"]);
+        if (!results[0]["COUNT(1)"]) {
+            return res.status(401).json({ msg: "invalid code" });
+        }
+        // update the user record and set user.auth = 1
+        const sqlCommand = `UPDATE user, verification_code SET user.auth = 1 WHERE user.id = verification_code.user_id AND verification_code.id = ?`;
+        db.query(sqlCommand, [code], (err) => {
+            // I hope this checks for everything
+            if (err)
+                return res.status(401).json({ msg: "invalid code" });
+            // delete the verification code
+            // this is not critical, so we don't check for errors
+            // the only consequence this could have is spamming the database
+            db.execute("DELETE FROM verification_code WHERE verification_code.id = ?", [code]);
+            return res.json({ msg: "account was verified" });
+        });
     });
 });
 // Login

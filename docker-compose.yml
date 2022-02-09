@@ -20,5 +20,13 @@ services:
     environment:
       - PMA_ARBITRARY=1
 
+  app:
+    build: .
+    ports:
+      - "5001:5001"
+    restart: always
+    depends_on:
+      - db
+
 volumes:
   db_data:
