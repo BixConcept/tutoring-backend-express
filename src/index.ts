@@ -8,10 +8,12 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import fs from "fs";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
+import Handlebars from "handlebars";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
 dotenv.config();
+const HOST = "https://api.nachhilfe.3nt3.de";
 
 // APP USE
 app.use(cors());
@@ -69,20 +71,25 @@ async function sendVerificationEmail(code: string, email: string) {
 
   console.log(code, email);
 
-  const mailOptions: MailOptions = {
-    from: "nachhilfebot@3nt3.de",
-    to: email,
-    subject: "Nachhilfeplattform GymHaan - Account bestätigen",
-    html: `<body><a href="http://localhost:5001/user/verify?code=${code}">Account verifizieren</a></body>`,
-    headers: { "Content-Type": "text/html" },
-  };
+  fs.readFile("verification_email.html", (err, data) => {
+    if (err) return console.error(err);
+    const template = Handlebars.compile(data.toString().replace("\n", ""));
 
-  transporter.sendMail(
-    mailOptions,
-    (err: Error | null, info: SentMessageInfo) => {
-      console.log(err, info);
-    }
-  );
+    const mailOptions: MailOptions = {
+      from: "nachhilfebot@3nt3.de",
+      to: email,
+      subject: "Nachhilfeplattform GymHaan - Account bestätigen",
+      html: template({ url: `${HOST}/user/verify?code=${code}` }),
+      headers: { "Content-Type": "text/html" },
+    };
+
+    transporter.sendMail(
+      mailOptions,
+      (err: Error | null, info: SentMessageInfo) => {
+        console.log(err, info);
+      }
+    );
+  });
 }
 
 // ROUTES (englisch für "Routen")
