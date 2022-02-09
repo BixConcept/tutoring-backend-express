@@ -111,6 +111,7 @@ app.post("/find", (req: express.Request, res: express.Response) => {
         user.email AS email,
         offer.max_grade AS max_grade,
         user.phone_number AS phone_number,
+        user.grade AS grade,
         offer.subject AS subject,
         user.misc
     FROM
