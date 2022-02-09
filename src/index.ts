@@ -3,11 +3,11 @@ import mysql from "mysql2";
 import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
-import nodemailer from "nodemailer";
+import nodemailer, { SentMessageInfo } from "nodemailer";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import fs from "fs";
-import { MysqlError } from "mysql";
+import { MailOptions } from "nodemailer/lib/smtp-transport";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -40,7 +40,12 @@ fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
     .toString()
     .split(";")
     .forEach((command) =>
-      db.execute(command, (err) => (err ? console.log(err) : null))
+      db.execute(command, (err) => {
+        // if there is an error that is relevant
+        if (err && err.code !== "ER_EMPTY_QUERY") {
+          console.error(err);
+        }
+      })
     );
 });
 
@@ -62,12 +67,21 @@ async function sendVerificationEmail(code: string, email: string) {
     },
   });
 
-  transporter.sendMail({
+  console.log(code, email);
+
+  const mailOptions: MailOptions = {
     from: "nachhilfebot@3nt3.de",
     to: email,
-    subject: "Account bestätigen",
-    html: `<h1>Account bestätigen</h1><br /><a href=api.3nt3.de/user/verify?code=${code}>Hier klicken</a>`,
-  });
+    subject: "Nachhilfeplattform GymHaan - Account bestätigen",
+    html: `${code}`,
+  };
+
+  transporter.sendMail(
+    mailOptions,
+    (err: Error | null, info: SentMessageInfo) => {
+      console.log(err, info);
+    }
+  );
 }
 
 // ROUTES (englisch für "Routen")
@@ -172,23 +186,28 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
           }
         );
       });
+
+      let code: string = generateCode();
+      db.query("INSERT INTO verification_code (id, user_id) VALUES (?, ?)", [
+        code,
+        id,
+      ]);
+      sendVerificationEmail(code, email);
+
       return res.json({ msg: "account was created" });
     }
   );
-
-  // db.query("INSERT INTO verification_code (id, user_id) VALUES (?, ?)", [
-  //   generateCode(),
-  //   id,
-  // ]);
-  // sendVerificationEmail(email, hash);
 });
 
 // Account verifizieren
-app.post("/user/verify", (req: express.Request, res: express.Response) => {
-  const { email, hash } = req.body;
-  const sqlCommand = `UPDATE users SET authorized = 1 WHERE email = ? AND hash = ?`;
-  db.query(sqlCommand, [email, hash], (err: any) => {
-    if (err) return res.send(err);
+app.get("/user/verify", (req: express.Request, res: express.Response) => {
+  if (!req.params.code) {
+    return res.status(401).json({ msg: "invalid code" });
+  }
+
+  const sqlCommand = `UPDATE users SET authorized = 1 WHERE users.id = authorization_code.user_id AND authorization_code.id = ?`;
+  db.query(sqlCommand, [req.params.code], (err: any) => {
+    if (err) return res.status(401).json({ msg: "invalid code" });
     return res.json({ msg: "account was verified" });
   });
 });
