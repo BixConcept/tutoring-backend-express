@@ -5,7 +5,24 @@ import { db } from ".";
 
 export interface CustomRequest extends Express.Request {
   isAuthenticated: boolean;
-  user?: any; // FIXME: real user type
+  user?: User; // FIXME: real user type
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  authLevel: AuthLevel;
+  grade: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export enum AuthLevel {
+  Unverified = 0,
+  Verified = 1,
+  Admin = 2,
 }
 
 export const getUser = (
@@ -28,7 +45,7 @@ export const getUser = (
       }
 
       if (values && values.length > 0) {
-        req.user = values[0];
+        req.user = dbResultToUser(values[0]);
         req.isAuthenticated = true;
       } else {
         req.user = undefined;
@@ -38,6 +55,19 @@ export const getUser = (
       next();
     }
   );
+};
+
+export const dbResultToUser = (r: any): User => {
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phoneNumber: r.phone_number,
+    authLevel: r.auth,
+    grade: r.grade,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
 };
 
 export const addSession = (token: string, userID: number): void => {

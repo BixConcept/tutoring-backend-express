@@ -332,19 +332,19 @@ app.post("/user/otp", (req: express.Request, res: express.Response) => {
   );
 });
 
-// FIXME: this should be behind authentication only for admins
 app.get("/users", (req: express.Request, res: express.Response) => {
-  db.query(
-    "SELECT * FROM user",
-    (error: mysql.QueryError | null, results: any) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ msg: "internal server error" });
-      }
+  if (req.user.auth == 2)
+    db.query(
+      "SELECT * FROM user",
+      (error: mysql.QueryError | null, results: any) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).json({ msg: "internal server error" });
+        }
 
-      return res.json({ content: results });
-    }
-  );
+        return res.json({ content: results });
+      }
+    );
 });
 
 app.delete("/user", (req: Express.Request, res: express.Response) => {
@@ -360,6 +360,14 @@ app.delete("/user", (req: Express.Request, res: express.Response) => {
     });
   } else {
     res.status(401).json({ msg: "not authenticated" });
+  }
+});
+
+app.get("/user", (req: Express.Request, res: express.Response) => {
+  if (req.isAuthenticated) {
+    return res.json({ content: req.user });
+  } else {
+    return res.status(401).json({ msg: "unauthorized" });
   }
 });
 
