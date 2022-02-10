@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
     `last_activity` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE(email)
 );
 
 -- offer table
@@ -21,7 +22,8 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
     `subject` VARCHAR(50) NOT NULL,
     `max_grade` INT NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
 );
 
 -- request table
@@ -36,6 +38,16 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
 -- verification_codes table
 CREATE TABLE IF NOT EXISTS `tutoring`.`verification_code` (
     `id` VARCHAR(64) NOT NULL,
-    `user_id` VARCHAR(255) NOT NULL,
-    PRIMARY KEY (`id`)
+    `user_id` INT NOT NULL,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
 );
+
+-- sessions table
+CREATE TABLE IF NOT EXISTS `tutoring`.`session` (
+    `token` VARCHAR(64) NOT NULL,
+    `user_id` INT NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`token`),
+    FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
+)
