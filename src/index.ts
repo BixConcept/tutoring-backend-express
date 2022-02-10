@@ -10,7 +10,7 @@ import fs from "fs";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
 import Handlebars from "handlebars";
 import cookieParser from "cookie-parser";
-import { addSession, CustomRequest, getUser } from "./auth";
+import { addSession, AuthLevel, CustomRequest, getUser } from "./auth";
 import { FieldInfo, MysqlError } from "mysql";
 import { sendOTPEmail, sendVerificationEmail } from "./email";
 
@@ -333,7 +333,7 @@ app.post("/user/otp", (req: express.Request, res: express.Response) => {
 });
 
 app.get("/users", (req: express.Request, res: express.Response) => {
-  if (req.user.auth == 2)
+  if (req.user.auth == AuthLevel.Admin)
     db.query(
       "SELECT * FROM user",
       (error: mysql.QueryError | null, results: any) => {
@@ -345,6 +345,8 @@ app.get("/users", (req: express.Request, res: express.Response) => {
         return res.json({ content: results });
       }
     );
+  else
+    return res.status(403).json({ msg: "you are forbidden from viewing this" });
 });
 
 app.delete("/user", (req: Express.Request, res: express.Response) => {
