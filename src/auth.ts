@@ -1,8 +1,12 @@
 import { NextFunction } from "express";
 import { QueryError } from "mysql2";
+import { nextTick } from "process";
 import { db } from ".";
 
-export interface User {}
+export interface CustomRequest extends Express.Request {
+  isAuthenticated: boolean;
+  user?: any; // FIXME: real user type
+}
 
 export const getUser = (
   req: any,
@@ -11,8 +15,6 @@ export const getUser = (
 ) => {
   const statement = `-- sql
     SELECT user.* FROM user, session WHERE user.id = session.user_id AND session.token = ?;`;
-
-  console.log("test");
 
   db.query(
     statement,
@@ -30,14 +32,11 @@ export const getUser = (
         req.user = undefined;
         req.isAuthenticated = false;
       }
-
-      console.log("getuser", req);
-      return;
+      next();
     }
   );
 
   req.isAuthenticated = false;
-
   next();
 };
 

@@ -10,7 +10,7 @@ import fs from "fs";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
 import Handlebars from "handlebars";
 import cookieParser from "cookie-parser";
-import { addSession, getUser } from "./auth";
+import { addSession, CustomRequest, getUser } from "./auth";
 import { FieldInfo } from "mysql";
 
 const app = express();
@@ -327,8 +327,12 @@ app.get("/users", (req: express.Request, res: express.Response) => {
   );
 });
 
-app.get("/user/delete", (req: express.Request, res: express.Response) => {
-  // VERIFY
+app.delete("/user", (req: Express.Request, res: express.Response) => {
+  if (req.isAuthenticated) {
+    console.log("authenticated");
+  } else {
+    res.status(401).json({ msg: "not authenticated" });
+  }
 });
 
 /* app.post("/user/update", (req: express.Request, res: express.Response) => {
