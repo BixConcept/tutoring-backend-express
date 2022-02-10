@@ -1,19 +1,9 @@
-FROM node:17-alpine AS node
+FROM node:17
 
-# Use /app as the CWD
-WORKDIR /app            
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm install
+COPY . .
 
-# Copy package.json and package-lock.json to /app
-COPY package*.json ./   
-
-# Install all dependencies
-RUN npm i               
-
-# Copy the rest of the code
-COPY . .                
-
-# Open desired port
-EXPOSE 5001
-
-# Use js files to run the application
-ENTRYPOINT ["npm", "run", "start"]
+RUN npm run build
+CMD ["node", "build/index.js"]

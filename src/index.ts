@@ -14,6 +14,7 @@ const app = express();
 const PORT = 5001 || process.env.PORT;
 dotenv.config();
 const HOST = "https://nachhilfe.3nt3.de/api";
+const FRONTEND = "https://nachhilfe.3nt3.de";
 
 // APP USE
 app.use(cors());
@@ -79,7 +80,10 @@ async function sendVerificationEmail(code: string, email: string) {
       from: "nachhilfebot@3nt3.de",
       to: email,
       subject: "Nachhilfeplattform GymHaan - Account bestätigen",
-      html: template({ url: `${HOST}/user/verify?code=${code}` }),
+      html: template({
+        url: `${FRONTEND}/verify/${code}`,
+        name: emailToName(email)[0],
+      }),
       headers: { "Content-Type": "text/html" },
     };
 
@@ -120,6 +124,7 @@ app.post("/find", (req: express.Request, res: express.Response) => {
         user.id = offer.user_id
         AND offer.subject = ?
         AND offer.max_grade >= ?
+        AND user.auth >= 1
         `;
 
   db.query(query, [subject, grade], (err: any, results: any) => {

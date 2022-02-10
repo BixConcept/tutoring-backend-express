@@ -1,18 +1,18 @@
-<html>
+<!DOCTYPE html>
+<html lang="de">
     <body>
         <style>
-            body {
-                font-family: 'Comic Sans MS' ';
-            }
             h1 {
                 text-align: center;
             }
             .content {
-                
+               background-color: lightgrey;  
+               border-radius: 0.5rem;
+               padding: 2rem;
             }
             .submit {
                 text-align: center;
-                background-color: greenyellow;
+                background-color: #98c222;
                 color: black;
                 border: 3px solid;
                 text-decoration: none;
@@ -28,14 +28,13 @@
     
         <h1>Verifiziere deine E-Mail Adresse</h1>
         <div class="content">
-            <p>Hey 👋<br>
+            <p>Hey {{name}} 👋<br>
             Bitte klicke auf den Button, um deinen Account auf unserer Nachhilfeseite zu bestätigen. <br>
+            <a href="{{url}}" class="submit">Bestätigen</a>
             Bis gleich 😃
-        </p>
-        
-        <a href="{{url}}" class="submit">Bestätigen</a>
-    
-        <p class="gray-text">Solltest du dich nirgendwo registriert haben, kannst du diese E-Mail einfach ignorieren.</p>
+
+            <p class="gray-text">Solltest du dich nirgendwo registriert haben, kannst du diese E-Mail einfach ignorieren.</p>
+            </p>
         </div>
     </body>
    

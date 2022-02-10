@@ -21,9 +21,12 @@ const nodemailer_1 = __importDefault(require("nodemailer"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const crypto_1 = __importDefault(require("crypto"));
 const fs_1 = __importDefault(require("fs"));
+const handlebars_1 = __importDefault(require("handlebars"));
 const app = (0, express_1.default)();
 const PORT = 5001 || process.env.PORT;
 dotenv_1.default.config();
+const HOST = "https://nachhilfe.3nt3.de/api";
+const FRONTEND = "https://nachhilfe.3nt3.de";
 // APP USE
 app.use((0, cors_1.default)());
 app.use(body_parser_1.default.json());
@@ -75,15 +78,23 @@ function sendVerificationEmail(code, email) {
             },
         });
         console.log(code, email);
-        const mailOptions = {
-            from: "nachhilfebot@3nt3.de",
-            to: email,
-            subject: "Nachhilfeplattform GymHaan - Account bestätigen",
-            html: `<body><a href="http://localhost:5001/user/verify?code=${code}">Account verifizieren</a></body>`,
-            headers: { "Content-Type": "text/html" },
-        };
-        transporter.sendMail(mailOptions, (err, info) => {
-            console.log(err, info);
+        fs_1.default.readFile("./src/verification_email.html", (err, data) => {
+            if (err)
+                return console.error(err);
+            const template = handlebars_1.default.compile(data.toString().replace("\n", ""));
+            const mailOptions = {
+                from: "nachhilfebot@3nt3.de",
+                to: email,
+                subject: "Nachhilfeplattform GymHaan - Account bestätigen",
+                html: template({
+                    url: `${FRONTEND}/verify/${code}`,
+                    name: emailToName(email)[0],
+                }),
+                headers: { "Content-Type": "text/html" },
+            };
+            transporter.sendMail(mailOptions, (err, info) => {
+                console.log(err, info);
+            });
         });
     });
 }
@@ -104,6 +115,7 @@ app.post("/find", (req, res) => {
         user.email AS email,
         offer.max_grade AS max_grade,
         user.phone_number AS phone_number,
+        user.grade AS grade,
         offer.subject AS subject,
         user.misc
     FROM
@@ -112,6 +124,7 @@ app.post("/find", (req, res) => {
         user.id = offer.user_id
         AND offer.subject = ?
         AND offer.max_grade >= ?
+        AND user.auth >= 1
         `;
     db.query(query, [subject, grade], (err, results) => {
         if (err) {
