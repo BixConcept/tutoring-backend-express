@@ -20,24 +20,24 @@ export const getUser = (
     statement,
     [req.cookies["session-keks"]],
     (err: QueryError | null, values: any) => {
+      // db.commit();
       if (err) {
         console.error(err);
         next();
+        return;
       }
 
-      if (values.length > 0) {
-        req.user = values;
+      if (values && values.length > 0) {
+        req.user = values[0];
         req.isAuthenticated = true;
       } else {
         req.user = undefined;
         req.isAuthenticated = false;
       }
+
       next();
     }
   );
-
-  req.isAuthenticated = false;
-  next();
 };
 
 export const addSession = (token: string, userID: number): void => {
@@ -45,4 +45,5 @@ export const addSession = (token: string, userID: number): void => {
   db.execute(statement, [token, userID], (err) => {
     console.log(err);
   });
+  db.commit();
 };

@@ -27,8 +27,8 @@ const logger = (req: express.Request, res: any, next: any) => {
 // APP USE
 app.use(cors());
 app.use(cookieParser());
-app.use(getUser);
 app.use(logger);
+app.use(getUser);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -238,7 +238,6 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
     (err: any, results: any) => {
       // if not, return error
       if (err) return res.status(401).json({ msg: "invalid code" });
-      console.log(results[0]["COUNT(1)"]);
       if (!results[0]["COUNT(1)"]) {
         return res.status(401).json({ msg: "invalid code" });
       }
@@ -329,7 +328,15 @@ app.get("/users", (req: express.Request, res: express.Response) => {
 
 app.delete("/user", (req: Express.Request, res: express.Response) => {
   if (req.isAuthenticated) {
-    console.log("authenticated");
+    db.execute("DELETE FROM user WHERE id = ?", [req.user.id], (err) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ msg: "internal server error" });
+        return;
+      }
+
+      res.json({ msg: "success" });
+    });
   } else {
     res.status(401).json({ msg: "not authenticated" });
   }
