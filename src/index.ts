@@ -341,7 +341,7 @@ app.post("/user/otp", (req: express.Request, res: express.Response) => {
 });
 
 app.get("/users", (req: express.Request, res: express.Response) => {
-  if (req.user.authLevel == AuthLevel.Admin)
+  if (req.isAuthenticated && req.user.authLevel == AuthLevel.Admin)
     db.query(
       "SELECT * FROM user",
       (error: mysql.QueryError | null, results: any) => {
