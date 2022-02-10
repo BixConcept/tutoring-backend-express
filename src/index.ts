@@ -1,5 +1,5 @@
 import express from "express";
-import mysql from "mysql2";
+import mysql, { QueryError } from "mysql2";
 import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
@@ -9,6 +9,9 @@ import crypto from "crypto";
 import fs from "fs";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
 import Handlebars from "handlebars";
+import cookieParser from "cookie-parser";
+import { addSession, getUser } from "./auth";
+import { FieldInfo } from "mysql";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -16,13 +19,21 @@ dotenv.config();
 const HOST = "https://nachhilfe.3nt3.de/api";
 const FRONTEND = "https://nachhilfe.3nt3.de";
 
+const logger = (req: express.Request, res: any, next: any) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+};
+
 // APP USE
 app.use(cors());
+app.use(cookieParser());
+app.use(getUser);
+app.use(logger);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // create connection
-const db = mysql.createConnection({
+export const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -38,7 +49,7 @@ db.connect((err: mysql.QueryError | null) => {
 
 // this reads the file which contains seperate sql statements seperated by a single empty line and executes them seperately.
 fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
-  if (err) return console.log(err);
+  if (err) return console.error(err);
   data
     .toString()
     .split(";")
@@ -88,7 +99,7 @@ async function sendVerificationEmail(code: string, email: string) {
     transporter.sendMail(
       mailOptions,
       (err: Error | null, info: SentMessageInfo) => {
-        console.log(err, info);
+        console.error(err, info);
       }
     );
   });
@@ -101,11 +112,10 @@ app.get("/", (req: express.Request, res: express.Response) => {
 
 // list matching offers
 app.post("/find", (req: express.Request, res: express.Response) => {
-  console.log(req.body);
   const subject: string = req.body.subject;
   const grade: number = req.body.grade;
 
-  const query: string = `
+  const query: string = `-- sql
     SELECT
         user.id AS user_id,
         offer.id AS offer_id,
@@ -122,14 +132,13 @@ app.post("/find", (req: express.Request, res: express.Response) => {
         user.id = offer.user_id
         AND offer.subject = ?
         AND offer.max_grade >= ?
-        AND user.auth >= 1
-        `;
+        AND user.auth >= 1`;
 
   // TODO: return as seperate objects (instead of user_id -> user: {id:})
 
   db.query(query, [subject, grade], (err: any, results: any) => {
     if (err) {
-      console.log("find", err);
+      console.error(err);
       return res.json({ msg: "internal server error" }).status(500);
     }
     return res.json({ content: results });
@@ -164,9 +173,13 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
   let subjects: { [key: string]: number } = {};
 
   // converts string grades to numbers
-  Object.keys(subjectsmaybe).forEach((key) => {
-    subjects[key] = parseInt(subjectsmaybe[key]);
-  });
+  try {
+    Object.keys(subjectsmaybe).forEach((key) => {
+      subjects[key] = parseInt(subjectsmaybe[key]);
+    });
+  } catch (e: any) {
+    return res.status(400).json({ msg: "invalid grades" });
+  }
 
   // hackery because frontend
   if (!checkEmailValidity(email) && !checkEmailValidity(email + "@gymhaan.de"))
@@ -178,7 +191,7 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
     [email, emailToName(email), misc, grade],
     (err: mysql.QueryError | null, results: any) => {
       if (err) {
-        console.log(err);
+        console.error(err);
         return res.json({ msg: "internal server error" }).status(500);
       }
 
@@ -214,7 +227,6 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
 // Account verifizieren
 app.get("/user/verify", (req: express.Request, res: express.Response) => {
   const code = req.query.code;
-  console.log(code);
   if (!code) {
     return res.status(401).json({ msg: "invalid code" });
   }
@@ -232,8 +244,8 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
       }
 
       // update the user record and set user.auth = 1
-      const sqlCommand = `UPDATE user, verification_code SET user.auth = 1 WHERE user.id = verification_code.user_id AND verification_code.id = ?`;
-      db.query(sqlCommand, [code], (err: any) => {
+      const sqlCommand = `UPDATE user, verification_code SET user.auth = 1 WHERE user.id = verification_code.user_id AND verification_code.id = ?; SELECT user.id FROM user, verification_code WHERE user.id = verification_code.user_id AND verification_code.id = ?`;
+      db.query(sqlCommand, [code, code], (err: Error | null, values: any) => {
         // I hope this checks for everything
         if (err) return res.status(401).json({ msg: "invalid code" });
 
@@ -245,7 +257,12 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
           [code]
         );
 
-        return res.json({ msg: "account was verified" });
+        const token: string = generateCode(64);
+        addSession(token, values[1][0].id);
+
+        return res
+          .cookie("session-keks", token, { maxAge: 1000 * 60 * 60 * 24 * 30 })
+          .json({ msg: "account was verified" });
       });
     }
   );
@@ -264,12 +281,27 @@ app.post("/user/login", (req: express.Request, res: express.Response) => {
       if (results.length > 0) {
         const comparision = await bcrypt.compare(
           password,
-          results[0].passwordHash
+          results[0]["password_hash"]
         );
         if (comparision) {
-          // send session sachen…
+          const token: string = generateCode(64);
 
-          res.json({ msg: "Successfully logged in", content: results[0] });
+          db.execute(
+            "INSERT INTO session (token, user_id) VALUES (?, ?)",
+            [token, results[0].id],
+            (err: QueryError | null) => {
+              if (err) {
+                console.error(err);
+                return res.status(500).json({ msg: "internal server error" });
+              }
+
+              res
+                .cookie("session-keks", token, {
+                  maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days in milliseconds
+                })
+                .json({ msg: "Successfully logged in", content: results[0] });
+            }
+          );
         } else {
           return res.json({ msg: "invaid credentials" }).status(401);
         }
@@ -286,7 +318,7 @@ app.get("/users", (req: express.Request, res: express.Response) => {
     "SELECT * FROM user",
     (error: mysql.QueryError | null, results: any) => {
       if (error) {
-        console.log(error);
+        console.error(error);
         return res.status(500).json({ msg: "internal server error" });
       }
 
@@ -298,5 +330,10 @@ app.get("/users", (req: express.Request, res: express.Response) => {
 app.get("/user/delete", (req: express.Request, res: express.Response) => {
   // VERIFY
 });
+
+/* app.post("/user/update", (req: express.Request, res: express.Response) => {
+
+)};
+*/
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}🐹🐹`));
