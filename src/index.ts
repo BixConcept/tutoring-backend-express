@@ -21,7 +21,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Datenbank einstellen
+// create connection
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -30,7 +30,7 @@ const db = mysql.createConnection({
   multipleStatements: true,
 });
 
-// Verbinden
+// connect
 db.connect((err: mysql.QueryError | null) => {
   if (err) console.log(err);
   else console.log("Connected to database!");
@@ -57,7 +57,7 @@ const checkEmailValidity = (email: string): boolean => {
   return /(.*)\.(.*)@gymhaan.de/.test(email);
 };
 
-// Send a verification email
+// send a verification email
 async function sendVerificationEmail(code: string, email: string) {
   // NOREPLY@GYMHAAN.DE
   const transporter = nodemailer.createTransport({
@@ -69,8 +69,6 @@ async function sendVerificationEmail(code: string, email: string) {
       pass: process.env.EMAIL_PW,
     },
   });
-
-  console.log(code, email);
 
   fs.readFile("./src/verification_email.html", (err, data) => {
     if (err) return console.error(err);
@@ -96,12 +94,12 @@ async function sendVerificationEmail(code: string, email: string) {
   });
 }
 
-// ROUTES (englisch für "Routen")
+// routes
 app.get("/", (req: express.Request, res: express.Response) => {
   res.json(["/find", "/user/register", "/user/verify", "/user/login"]);
 });
 
-// find tutor (englisch für "finde Lehrer*:_in")
+// list matching offers
 app.post("/find", (req: express.Request, res: express.Response) => {
   console.log(req.body);
   const subject: string = req.body.subject;
@@ -127,18 +125,18 @@ app.post("/find", (req: express.Request, res: express.Response) => {
         AND user.auth >= 1
         `;
 
+  // TODO: return as seperate objects (instead of user_id -> user: {id:})
+
   db.query(query, [subject, grade], (err: any, results: any) => {
     if (err) {
       console.log("find", err);
-      res.json({ msg: "internal server error" }).status(500);
-      return;
+      return res.json({ msg: "internal server error" }).status(500);
     }
-    console.log(results);
     return res.json({ content: results });
   });
 });
 
-// converts something like 'christian.lindner@tothemoon.de' to Christian Lindner
+// converts something like 'christian.lindner@fdphaan.de' to Christian Lindner
 const emailToName = (email: string): string => {
   return email
     .split("@")[0]
@@ -151,25 +149,26 @@ const capitalizeWord = (x: string): string => {
   return x.charAt(0).toUpperCase() + x.slice(1);
 };
 
-const generateCode = (): string => {
-  return crypto.randomBytes(64).toString("hex").slice(0, 32);
+// generate random 32 chars string
+const generateCode = (n: number = 32): string => {
+  return crypto.randomBytes(n).toString("hex").slice(0, n);
 };
 
 // create account
 app.post("/user/register", (req: express.Request, res: express.Response) => {
   const email: string = req.body.email;
-  const subjectsmaybe: { [key: string]: any } = req.body.subjects;
-  console.log(req.body);
+  const subjectsmaybe: { [key: string]: any } = req.body.subjects; // because we are not intelligent enough to manage react state
   const misc: string = req.body.misc;
   const grade: number = req.body.grade;
-  // const 3
 
-  let subjects: any = {};
+  let subjects: { [key: string]: number } = {};
 
+  // converts string grades to numbers
   Object.keys(subjectsmaybe).forEach((key) => {
     subjects[key] = parseInt(subjectsmaybe[key]);
   });
 
+  // hackery because frontend
   if (!checkEmailValidity(email) && !checkEmailValidity(email + "@gymhaan.de"))
     return res.status(400).json({ msg: "invalid email" });
 
@@ -184,8 +183,8 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
       }
 
       let id: number = results[0].insertId;
-      console.log(id);
 
+      // add offer for each selected subject
       Object.keys(subjects).forEach((key: string) => {
         const stmt: string = `INSERT INTO offer (user_id, subject, max_grade) VALUES (?, ?, ?)`;
         db.execute(
@@ -194,18 +193,17 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
           (error: mysql.QueryError | null) => {
             if (error) {
               console.error(error);
-              // res.status(500).json({ msg: "internal server error" });
-              return;
             }
           }
         );
       });
 
-      let code: string = generateCode();
+      let code: string = generateCode(32);
       db.query("INSERT INTO verification_code (id, user_id) VALUES (?, ?)", [
         code,
         id,
       ]);
+
       sendVerificationEmail(code, email);
 
       return res.json({ msg: "account was created" });
@@ -261,7 +259,7 @@ app.post("/user/login", (req: express.Request, res: express.Response) => {
     "SELECT * FROM users WHERE email = ?",
     [email],
     async (error: any, results: any, fields: any) => {
-      if (error) return res.json({ msg: "internal server error" }).status(500);
+      if (error) return res.status(500).json({ msg: "internal server error" });
 
       if (results.length > 0) {
         const comparision = await bcrypt.compare(
@@ -282,18 +280,7 @@ app.post("/user/login", (req: express.Request, res: express.Response) => {
   );
 });
 
-// get all subjects
-app.get("/subjects", (req: express.Request, res: express.Response) => {
-  db.query(
-    "SELECT * FROM subjects",
-    (error: mysql.QueryError, results: any, fields: mysql.Field[]) => {
-      if (error) {
-        return res.json("internal server error").status(500);
-      } else return res.json({ content: results }).status(200);
-    }
-  );
-});
-
+// FIXME: this should be behind authentication only for admins
 app.get("/users", (req: express.Request, res: express.Response) => {
   db.query(
     "SELECT * FROM user",
