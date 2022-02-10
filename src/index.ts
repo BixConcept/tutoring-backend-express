@@ -11,13 +11,13 @@ import { MailOptions } from "nodemailer/lib/smtp-transport";
 import Handlebars from "handlebars";
 import cookieParser from "cookie-parser";
 import { addSession, CustomRequest, getUser } from "./auth";
-import { FieldInfo } from "mysql";
+import { FieldInfo, MysqlError } from "mysql";
+import { sendOTPEmail, sendVerificationEmail } from "./email";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
 dotenv.config();
 const HOST = "https://nachhilfe.3nt3.de/api";
-const FRONTEND = "https://nachhilfe.3nt3.de";
 
 const logger = (req: express.Request, res: any, next: any) => {
   console.log(`${req.method} ${req.path}`);
@@ -47,6 +47,17 @@ db.connect((err: mysql.QueryError | null) => {
   else console.log("Connected to database!");
 });
 
+// NOREPLY@GYMHAAN.DE
+const transporter = nodemailer.createTransport({
+  host: "mail.3nt3.de",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "nachhilfebot@3nt3.de",
+    pass: process.env.EMAIL_PW,
+  },
+});
+
 // this reads the file which contains seperate sql statements seperated by a single empty line and executes them seperately.
 fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
   if (err) return console.error(err);
@@ -67,43 +78,6 @@ fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
 const checkEmailValidity = (email: string): boolean => {
   return /(.*)\.(.*)@gymhaan.de/.test(email);
 };
-
-// send a verification email
-async function sendVerificationEmail(code: string, email: string) {
-  // NOREPLY@GYMHAAN.DE
-  const transporter = nodemailer.createTransport({
-    host: "mail.3nt3.de",
-    port: 465,
-    secure: true,
-    auth: {
-      user: "nachhilfebot@3nt3.de",
-      pass: process.env.EMAIL_PW,
-    },
-  });
-
-  fs.readFile("./src/verification_email.html", (err, data) => {
-    if (err) return console.error(err);
-    const template = Handlebars.compile(data.toString().replace("\n", ""));
-
-    const mailOptions: MailOptions = {
-      from: "nachhilfebot@3nt3.de",
-      to: email,
-      subject: "Nachhilfeplattform GymHaan - Account bestätigen",
-      html: template({
-        url: `${FRONTEND}/verify/${code}`,
-        name: emailToName(email)[0],
-      }),
-      headers: { "Content-Type": "text/html" },
-    };
-
-    transporter.sendMail(
-      mailOptions,
-      (err: Error | null, info: SentMessageInfo) => {
-        console.error(err, info);
-      }
-    );
-  });
-}
 
 // routes
 app.get("/", (req: express.Request, res: express.Response) => {
@@ -146,7 +120,7 @@ app.post("/find", (req: express.Request, res: express.Response) => {
 });
 
 // converts something like 'christian.lindner@fdphaan.de' to Christian Lindner
-const emailToName = (email: string): string => {
+export const emailToName = (email: string): string => {
   return email
     .split("@")[0]
     .split(".")
@@ -217,7 +191,7 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
         id,
       ]);
 
-      sendVerificationEmail(code, email);
+      sendVerificationEmail(transporter, code, email);
 
       return res.json({ msg: "account was created" });
     }
@@ -268,45 +242,92 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
 });
 
 // Login
-app.post("/user/login", (req: express.Request, res: express.Response) => {
-  const { email, password } = req.body;
+// app.post("/user/login", (req: express.Request, res: express.Response) => {
+//   const { email, password } = req.body;
+
+//   db.query(
+//     "SELECT * FROM users WHERE email = ?",
+//     [email],
+//     async (error: any, results: any, fields: any) => {
+//       if (error) return res.status(500).json({ msg: "internal server error" });
+
+//       if (results.length > 0) {
+//         const comparision = await bcrypt.compare(
+//           password,
+//           results[0]["password_hash"]
+//         );
+//         if (comparision) {
+//           const token: string = generateCode(64);
+
+//           db.execute(
+//             "INSERT INTO session (token, user_id) VALUES (?, ?)",
+//             [token, results[0].id],
+//             (err: QueryError | null) => {
+//               if (err) {
+//                 console.error(err);
+//                 return res.status(500).json({ msg: "internal server error" });
+//               }
+
+//               res
+//                 .cookie("session-keks", token, {
+//                   maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days in milliseconds
+//                 })
+//                 .json({ msg: "Successfully logged in", content: results[0] });
+//             }
+//           );
+//         } else {
+//           return res.json({ msg: "invaid credentials" }).status(401);
+//         }
+//       } else {
+//         return res.json({ code: 401, msg: "user not found" });
+//       }
+//     }
+//   );
+// });
+
+// send link/one time password to email address
+app.post("/user/otp", (req: express.Request, res: express.Response) => {
+  const email: string = req.body.email;
+  if (!email) {
+    res
+      .status(400)
+      .json({ msg: "you have to specify an email-address to log in" });
+    return;
+  }
 
   db.query(
-    "SELECT * FROM users WHERE email = ?",
+    "SELECT * FROM user WHERE email = ?",
     [email],
-    async (error: any, results: any, fields: any) => {
-      if (error) return res.status(500).json({ msg: "internal server error" });
-
-      if (results.length > 0) {
-        const comparision = await bcrypt.compare(
-          password,
-          results[0]["password_hash"]
-        );
-        if (comparision) {
-          const token: string = generateCode(64);
-
-          db.execute(
-            "INSERT INTO session (token, user_id) VALUES (?, ?)",
-            [token, results[0].id],
-            (err: QueryError | null) => {
-              if (err) {
-                console.error(err);
-                return res.status(500).json({ msg: "internal server error" });
-              }
-
-              res
-                .cookie("session-keks", token, {
-                  maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days in milliseconds
-                })
-                .json({ msg: "Successfully logged in", content: results[0] });
-            }
-          );
-        } else {
-          return res.json({ msg: "invaid credentials" }).status(401);
-        }
-      } else {
-        return res.json({ code: 401, msg: "user not found" });
+    async (err: any, results: any) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ msg: "internal server error" });
+        return;
       }
+
+      if (results.length < 1) {
+        res
+          .status(400)
+          .json({ msg: "no user with that email address exists." });
+        return;
+      }
+
+      const email: string = results[0].email;
+
+      let code = generateCode(32);
+      db.execute(
+        "INSERT INTO verification_code (id, user_id) VALUES (?, ?)",
+        [code, results[0].id],
+        (err) => {
+          if (err) {
+            res.status(500).json({ msg: "internal server error" });
+            return;
+          }
+        }
+      );
+
+      await sendOTPEmail(transporter, code, email);
+      res.json({ msg: "email sent" });
     }
   );
 });
