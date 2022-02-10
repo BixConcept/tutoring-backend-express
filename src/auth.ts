@@ -10,7 +10,7 @@ export const getUser = (
   next: NextFunction
 ) => {
   const statement = `-- sql
-    SELECT * FROM user, session WHERE user.id = session.user_id AND session.token = ?;`;
+    SELECT user.* FROM user, session WHERE user.id = session.user_id AND session.token = ?;`;
 
   console.log("test");
 
@@ -23,10 +23,20 @@ export const getUser = (
         next();
       }
 
-      console.log(values);
+      if (values.length > 0) {
+        req.user = values;
+        req.isAuthenticated = true;
+      } else {
+        req.user = undefined;
+        req.isAuthenticated = false;
+      }
+
+      console.log("getuser", req);
       return;
     }
   );
+
+  req.isAuthenticated = false;
 
   next();
 };
