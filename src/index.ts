@@ -10,9 +10,17 @@ import fs from "fs";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
 import Handlebars from "handlebars";
 import cookieParser from "cookie-parser";
-import { addSession, AuthLevel, CustomRequest, getUser } from "./auth";
+import {
+  addSession,
+  AuthLevel,
+  CustomRequest,
+  dbResultToUser,
+  getUser,
+  User,
+} from "./auth";
 import { FieldInfo, MysqlError } from "mysql";
 import { sendOTPEmail, sendVerificationEmail } from "./email";
+import Query from "mysql2/typings/mysql/lib/protocol/sequences/Query";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -333,7 +341,7 @@ app.post("/user/otp", (req: express.Request, res: express.Response) => {
 });
 
 app.get("/users", (req: express.Request, res: express.Response) => {
-  if (req.user.auth == AuthLevel.Admin)
+  if (req.user.authLevel == AuthLevel.Admin)
     db.query(
       "SELECT * FROM user",
       (error: mysql.QueryError | null, results: any) => {
@@ -377,33 +385,60 @@ app.put("/user", (req: express.Request, res: express.Response) => {
   if (req.isAuthenticated) {
     const changes = req.body;
 
-    // list of attributes we don't allow the user to change
-    const unchangeables: string[] = [
-      "id",
-      "createdAt",
-      "updatedAt",
-      "lastActivity",
-      "authLevel",
-    ];
+    let oldUser: User = req.user;
 
-    // list of attributes the user tried to change but isn't allowed to
-    let errors: string[] = [];
+    if (req.user.authLevel != AuthLevel.Admin) {
+      // list of attributes we don't allow the user to change
+      const unchangeables: string[] = [
+        "id",
+        "createdAt",
+        "updatedAt",
+        "lastActivity",
+        "authLevel",
+      ];
 
-    Object.keys(changes).forEach((change) => {
-      // if the proposed change is inside the list of unchangeables
-      if (unchangeables.indexOf(change) > -1) {
-        errors.push(change);
-      }
-    });
+      // list of attributes the user tried to change but isn't allowed to
+      let errors: string[] = [];
 
-    if (errors.length > 0) {
-      return res.status(400).json({
-        msg: "you are not allowed to change the following attributes",
-        errors,
+      Object.keys(changes).forEach((change) => {
+        // if the proposed change is inside the list of unchangeables
+        if (unchangeables.indexOf(change) > -1) {
+          errors.push(change);
+        }
       });
+
+      if (errors.length > 0) {
+        return res.status(400).json({
+          msg: "you are not allowed to change the following attributes",
+          errors,
+        });
+      }
+    } else {
+      const { id } = req.params;
+      if (id) {
+        db.query(
+          "SELECT * FROM user WHERE id = ?",
+          [id],
+          (err: QueryError | null, result: any) => {
+            if (err) {
+              console.error(err);
+              res.status(500).json({ msg: "internal serer error" });
+              return;
+            }
+
+            if (result.length === 0) {
+              return res
+                .status(404)
+                .json({ msg: "the specified user does not exist" });
+            }
+
+            oldUser = dbResultToUser(result[0]);
+          }
+        );
+      }
     }
 
-    let updated = { ...req.user, ...changes };
+    let updated = { ...oldUser, ...changes };
 
     db.query(
       "UPDATE user SET email = ?, name = ?, phone_number = ?, grade = ? WHERE id = ?",
