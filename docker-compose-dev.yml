@@ -1,0 +1,34 @@
+version: "3"
+services:
+  db:
+    image: mysql:latest
+    restart: always
+    depends_on:
+      - pma
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=asdfasdf
+      - MYSQL_USER=tutoring
+      - MYSQL_PASSWORD=garnichts
+      - MYSQL_DATABASE=tutoring
+    ports:
+      - "3306:3306"
+  pma:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8000:80"
+    environment:
+      - PMA_ARBITRARY=1
+
+  app:
+    build: .
+    ports:
+      - "5001:5001"
+    restart: always
+    depends_on:
+      - db
+
+volumes:
+  db_data:
