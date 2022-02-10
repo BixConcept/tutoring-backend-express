@@ -438,15 +438,18 @@ app.put("/user", (req: express.Request, res: express.Response) => {
       }
     }
 
+    // this merges the things
     let updated = { ...oldUser, ...changes };
 
     db.query(
-      "UPDATE user SET email = ?, name = ?, phone_number = ?, grade = ? WHERE id = ?",
+      "UPDATE user SET id = ?, email = ?, name = ?, phone_number = ?, grade = ?, auth = ? WHERE id = ?",
       [
+        updated.id,
         updated.email,
         updated.name,
         updated.phoneNumber,
         updated.grade,
+        updated.auth,
         req.user.id,
       ],
       (err) => {
