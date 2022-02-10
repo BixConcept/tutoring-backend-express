@@ -349,7 +349,7 @@ app.get("/users", (req: express.Request, res: express.Response) => {
     return res.status(403).json({ msg: "you are forbidden from viewing this" });
 });
 
-app.delete("/user", (req: Express.Request, res: express.Response) => {
+app.delete("/user", (req: express.Request, res: express.Response) => {
   if (req.isAuthenticated) {
     db.execute("DELETE FROM user WHERE id = ?", [req.user.id], (err) => {
       if (err) {
@@ -365,7 +365,7 @@ app.delete("/user", (req: Express.Request, res: express.Response) => {
   }
 });
 
-app.get("/user", (req: Express.Request, res: express.Response) => {
+app.get("/user", (req: express.Request, res: express.Response) => {
   if (req.isAuthenticated) {
     return res.json({ content: req.user });
   } else {
@@ -373,6 +373,61 @@ app.get("/user", (req: Express.Request, res: express.Response) => {
   }
 });
 
+app.put("/user", (req: express.Request, res: express.Response) => {
+  if (req.isAuthenticated) {
+    const changes = req.body;
+
+    // list of attributes we don't allow the user to change
+    const unchangeables: string[] = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "lastActivity",
+      "authLevel",
+    ];
+
+    // list of attributes the user tried to change but isn't allowed to
+    let errors: string[] = [];
+
+    Object.keys(changes).forEach((change) => {
+      // if the proposed change is inside the list of unchangeables
+      if (unchangeables.indexOf(change) > -1) {
+        errors.push(change);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        msg: "you are not allowed to change the following attributes",
+        errors,
+      });
+    }
+
+    let updated = { ...req.user, ...changes };
+
+    db.query(
+      "UPDATE user SET email = ?, name = ?, phone_number = ?, grade = ? WHERE id = ?",
+      [
+        updated.email,
+        updated.name,
+        updated.phoneNumber,
+        updated.grade,
+        req.user.id,
+      ],
+      (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ msg: "internal server error" });
+        }
+      }
+    );
+    db.commit();
+
+    return res.json({ content: updated });
+  } else {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+});
 /* app.post("/user/update", (req: express.Request, res: express.Response) => {
 
 )};
