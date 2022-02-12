@@ -465,7 +465,7 @@ app.put("/user", (req: express.Request, res: express.Response) => {
         updated.name,
         updated.phoneNumber,
         updated.grade,
-        updated.auth,
+        updated.authLevel,
         req.user.id,
       ],
       (err) => {
@@ -478,30 +478,31 @@ app.put("/user", (req: express.Request, res: express.Response) => {
 
     db.commit();
 
-    /* --- insert new offers --- */
-    // get the intersection
-    const intersection = Object.keys(req.body.subjects);
+    if (changes.subjects) {
+      /* --- insert new offers --- */
+      // get the intersection
+      const intersection = Object.keys(req.body.subjects);
 
-    /* --- update existing offers --- */
-    // TODO: refactor this to use one sql statement instead of multiple?
-    Object.keys(changes.subjects).forEach((key: string) => {
-      const stmt: string = `UPDATE offer subject = ?, max_grade = ? WHERE user_id = ?`;
-      db.execute(
-        stmt,
-        [req.user.id, key, changes.subjects[key]],
-        (error: mysql.QueryError | null) => {
-          if (error) {
-            console.error(error);
+      /* --- update existing offers --- */
+      // TODO: refactor this to use one sql statement instead of multiple?
+      Object.keys(changes.subjects).forEach((key: string) => {
+        const stmt: string = `UPDATE offer subject = ?, max_grade = ? WHERE user_id = ?`;
+        db.execute(
+          stmt,
+          [req.user.id, key, changes.subjects[key]],
+          (error: mysql.QueryError | null) => {
+            if (error) {
+              console.error(error);
+            }
           }
-        }
-      );
-    });
+        );
+      });
+      // remove offers
+    }
     return res.json({ content: updated });
   } else {
     return res.status(401).json({ msg: "unauthorized" });
   }
-
-  // remove offers
 });
 
 app.get("/user/logout", (req: express.Request, res: express.Response) => {
