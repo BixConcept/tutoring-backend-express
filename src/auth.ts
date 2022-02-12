@@ -30,8 +30,13 @@ export const getUser = (
   res: Express.Response,
   next: NextFunction
 ) => {
-  const statement = `-- sql
-    SELECT user.* FROM user, session WHERE user.id = session.user_id AND session.token = ?;`;
+  const statement = `SELECT user.* FROM user, session, offer WHERE user.id = session.user_id AND session.token = ? AND offer.user_id = user.id;`;
+
+  /* 
+  user                                                                                                                   || offer 
+  -----------------------------------------------------------------------------------------------------------------------||-------------------------------------------------|
+  user_id | email | name | phone_number | grade | misc | password_hash | auth | created_at | updated_at | last_activity  || id | user_id | subject | max_grade | created_at | 
+  */
 
   db.query(
     statement,
@@ -43,6 +48,8 @@ export const getUser = (
         next();
         return;
       }
+
+      console.log(values);
 
       if (values && values.length > 0) {
         req.user = dbResultToUser(values[0]);
@@ -57,6 +64,8 @@ export const getUser = (
   );
 };
 
+// converts the result returned from the database to a User object
+// necessary because the column names differ from the fields in User
 export const dbResultToUser = (r: any): User => {
   return {
     id: r.id,
@@ -73,7 +82,7 @@ export const dbResultToUser = (r: any): User => {
 export const addSession = (token: string, userID: number): void => {
   const statement = "INSERT INTO session (token, user_id) VALUES (?, ?)";
   db.execute(statement, [token, userID], (err) => {
-    console.log(err);
+    console.error(err);
   });
   db.commit();
 };

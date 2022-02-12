@@ -21,6 +21,7 @@ import {
 import { FieldInfo, MysqlError } from "mysql";
 import { sendOTPEmail, sendVerificationEmail } from "./email";
 import Query from "mysql2/typings/mysql/lib/protocol/sequences/Query";
+import { env } from "process";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -33,7 +34,15 @@ const logger = (req: express.Request, res: any, next: any) => {
 };
 
 // APP USE
-app.use(cors());
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === "PRODUCTION"
+        ? "https://nachhilfe.3nt3.de"
+        : "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(logger);
 app.use(getUser);
@@ -233,17 +242,23 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
         // delete the verification code
         // this is not critical, so we don't check for errors
         // the only consequence this could have is spamming the database
-        db.execute(
-          "DELETE FROM verification_code WHERE verification_code.id = ?",
-          [code]
-        );
+        // db.execute(
+        //   "DELETE FROM verification_code WHERE verification_code.id = ?",
+        //   [code]
+        // );
 
         const token: string = generateCode(64);
         addSession(token, values[1][0].id);
 
-        return res
-          .cookie("session-keks", token, { maxAge: 1000 * 60 * 60 * 24 * 30 })
-          .json({ msg: "account was verified" });
+        console.log("successful");
+        res.cookie("session-keks", token, {
+          maxAge: 1000 * 60 * 60 * 24 * 30,
+          path: "/",
+          httpOnly: true,
+          sameSite: "lax",
+        });
+
+        return res.json({ msg: "account was verified" });
       });
     }
   );
@@ -365,11 +380,12 @@ app.delete("/user", (req: express.Request, res: express.Response) => {
         res.status(500).json({ msg: "internal server error" });
         return;
       }
+      db.commit();
 
-      res.json({ msg: "success" });
+      return res.json({ msg: "success" });
     });
   } else {
-    res.status(401).json({ msg: "not authenticated" });
+    return res.status(401).json({ msg: "not authenticated" });
   }
 });
 
@@ -459,13 +475,51 @@ app.put("/user", (req: express.Request, res: express.Response) => {
         }
       }
     );
+
     db.commit();
 
+    /* --- insert new offers --- */
+    // get the intersection
+    const intersection = Object.keys(req.body.subjects);
+
+    /* --- update existing offers --- */
+    // TODO: refactor this to use one sql statement instead of multiple?
+    Object.keys(changes.subjects).forEach((key: string) => {
+      const stmt: string = `UPDATE offer subject = ?, max_grade = ? WHERE user_id = ?`;
+      db.execute(
+        stmt,
+        [req.user.id, key, changes.subjects[key]],
+        (error: mysql.QueryError | null) => {
+          if (error) {
+            console.error(error);
+          }
+        }
+      );
+    });
     return res.json({ content: updated });
   } else {
     return res.status(401).json({ msg: "unauthorized" });
   }
+
+  // remove offers
 });
+
+app.get("/user/logout", (req: express.Request, res: express.Response) => {
+  const cookie = req.cookies["session-keks"];
+  if (cookie) {
+    db.execute("DELETE FROM session WHERE token = ?", [cookie], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ msg: "internal server error" });
+      }
+    });
+    db.commit();
+
+    res.clearCookie("session-keks").json({ msg: "logged out" });
+  }
+  return res.status(204);
+});
+
 /* app.post("/user/update", (req: express.Request, res: express.Response) => {
 
 )};

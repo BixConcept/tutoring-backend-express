@@ -22,7 +22,7 @@ export async function sendVerificationEmail(
       subject: "Nachhilfeplattform GymHaan - Account bestätigen",
       html: template({
         url: `${FRONTEND}/verify/${code}`,
-        name: emailToName(email)[0],
+        name: emailToName(email).split(" ")[0],
       }),
       headers: { "Content-Type": "text/html" },
     };
@@ -51,7 +51,7 @@ export async function sendOTPEmail(
       subject: "Nachhilfeplattform GymHaan - Anmelden",
       html: template({
         url: `${FRONTEND}/verify/${code}`,
-        name: emailToName(email),
+        name: emailToName(email).split(" ")[0],
       }),
       headers: { "Content-Type": "text/html" },
     };
