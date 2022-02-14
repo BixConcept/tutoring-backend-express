@@ -52,7 +52,7 @@ WHERE
     request.user_id = [user_id];
 
 -- User Tabelle erzeugen
-CREATE TABLE `tutoring`.`user` (
+CREATE TABLE `nachhilfe`.`user` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
@@ -67,14 +67,14 @@ CREATE TABLE `tutoring`.`user` (
 );
 
 -- subjects table
-CREATE TABLE `tutoring`.`subject` (
+CREATE TABLE `nachhilfe`.`subject` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(50) NOT NULL,
     PRIMARY KEY (`id`)
 );
 
 -- offer table
-CREATE TABLE `tutoring`.`offer` (
+CREATE TABLE `nachhilfe`.`offer` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `user_id` INT NOT NULL,
     `subject_id` INT NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE `tutoring`.`offer` (
 );
 
 -- request table
-CREATE TABLE `tutoring`.`request` (
+CREATE TABLE `nachhilfe`.`request` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `subject_id` INT NOT NULL,

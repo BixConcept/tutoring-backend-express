@@ -19,11 +19,18 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
 CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `user_id` INT NOT NULL,
-    `subject` VARCHAR(50) NOT NULL,
+    `subject_id` INT NOT NULL,
     `max_grade` INT NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
+    FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE,
+    FOREIGN KEY (`subject_id`) REFERENCES subject (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    PRIMARY KEY (`id`)
 );
 
 -- request table
@@ -36,10 +43,10 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
 );
 
 -- verification_codes table
-CREATE TABLE IF NOT EXISTS `tutoring`.`verification_code` (
-    `id` VARCHAR(64) NOT NULL,
+CREATE TABLE IF NOT EXISTS `tutoring`.`verification_token` (
+    `token` VARCHAR(64) NOT NULL,
     `user_id` INT NOT NULL,
-    PRIMARY KEY (`id`),
+    PRIMARY KEY (`token`),
     FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
 );
 

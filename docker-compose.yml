@@ -9,9 +9,9 @@ services:
       - db_data:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=asdfasdf
-      - MYSQL_USER=tutoring
+      - MYSQL_USER=nachhilfe
       - MYSQL_PASSWORD=garnichts
-      - MYSQL_DATABASE=tutoring
+      - MYSQL_DATABASE=nachhilfe
     ports:
       - "3306:3306"
   pma:
