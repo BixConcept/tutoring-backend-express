@@ -7,7 +7,14 @@ import nodemailer, { SentMessageInfo } from "nodemailer";
 import crypto from "crypto";
 import fs from "fs";
 import cookieParser from "cookie-parser";
-import { addSession, AuthLevel, dbResultToUser, getUser, User } from "./auth";
+import {
+  addSession,
+  AuthLevel,
+  dbResultToUser,
+  getUser,
+  Offer,
+  User,
+} from "./auth";
 import { sendOTPEmail, sendVerificationEmail } from "./email";
 
 const app = express();
@@ -343,7 +350,7 @@ app.post("/user/otp", (req: express.Request, res: express.Response) => {
 });
 
 app.get("/users", (req: express.Request, res: express.Response) => {
-  if (req.isAuthenticated && req.user.authLevel == AuthLevel.Admin)
+  if (req.user && req.user.authLevel == AuthLevel.Admin)
     db.query(
       "SELECT * FROM user",
       (error: mysql.QueryError | null, results: any) => {
@@ -360,7 +367,7 @@ app.get("/users", (req: express.Request, res: express.Response) => {
 });
 
 app.delete("/user", (req: express.Request, res: express.Response) => {
-  if (req.isAuthenticated) {
+  if (req.user) {
     db.execute("DELETE FROM user WHERE id = ?", [req.user.id], (err) => {
       if (err) {
         console.error(err);
@@ -377,7 +384,7 @@ app.delete("/user", (req: express.Request, res: express.Response) => {
 });
 
 app.get("/user", (req: express.Request, res: express.Response) => {
-  if (req.isAuthenticated) {
+  if (req.user) {
     return res.json({ content: req.user });
   } else {
     return res.status(401).json({ msg: "unauthorized" });
@@ -385,7 +392,7 @@ app.get("/user", (req: express.Request, res: express.Response) => {
 });
 
 app.put("/user", (req: express.Request, res: express.Response) => {
-  if (req.isAuthenticated) {
+  if (req.user) {
     const changes = req.body;
 
     let oldUser: User = req.user;
@@ -468,9 +475,16 @@ app.put("/user", (req: express.Request, res: express.Response) => {
     if (changes.subjects) {
       /* --- insert new offers --- */
       // get the intersection
-      const newSubjects = Object.keys(req.body.subjects);
+      const additions: string[] = Object.keys(changes.subjects).filter(
+        (x) => req.user.offers.filter((y: Offer) => y.subject === x).length > 0
+      );
 
-      return;
+      additions.forEach((subject) => {
+        db.query(
+          `INSERT INTO offer (subject, max_grade, user_id) VALUES = (?, ?, ?)`,
+          [subject, changes.subjects[subject], req.user.id]
+        );
+      });
 
       /* --- update existing offers --- */
       // TODO: refactor this to use one sql statement instead of multiple?
