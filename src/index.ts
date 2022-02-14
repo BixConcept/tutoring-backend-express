@@ -473,36 +473,32 @@ app.put("/user", (req: express.Request, res: express.Response) => {
     db.commit();
 
     if (changes.subjects) {
-      /* --- insert new offers --- */
-      // get the intersection
-      const additions: string[] = Object.keys(changes.subjects).filter(
-        (x) => req.user.offers.filter((y: Offer) => y.subject === x).length > 0
-      );
-
-      additions.forEach((subject) => {
-        db.query(
-          `INSERT INTO offer (subject, max_grade, user_id) VALUES = (?, ?, ?)`,
-          [subject, changes.subjects[subject], req.user.id]
-        );
-      });
-
-      /* --- update existing offers --- */
-      // TODO: refactor this to use one sql statement instead of multiple?
-      Object.keys(changes.subjects).forEach((key: string) => {
-        const stmt: string = `UPDATE offer subject = ?, max_grade = ? WHERE user_id = ?`;
-        db.execute(
-          stmt,
-          [req.user.id, key, changes.subjects[key]],
-          (error: mysql.QueryError | null) => {
-            if (error) {
-              console.error(error);
-            }
+      // first delete everything, then insert new ones
+      // this is not the correctest way to do this, but it is a whole lot more performant than doing something with O(n^3)
+      db.execute(
+        `DELETE FROM offer WHERE user_id = ?`,
+        [req.user.id],
+        (err: any | null) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ msg: "internal server error" });
           }
-        );
-      });
-      // remove offers
+
+          Object.keys(changes.subjects).forEach((subject: string) => {
+            db.execute(
+              `INSERT INTO offer (subject, max_grade, user_id) VALUES (?, ?, ?)`,
+              [subject, changes.subjects[subject], req.user.id],
+              (error: QueryError | null) => {
+                if (error) {
+                  console.log(error);
+                }
+              }
+            );
+          });
+        }
+      );
     }
-    return res.json({ content: updated });
+    return res.json({ msg: "successful" });
   } else {
     return res.status(401).json({ msg: "unauthorized" });
   }
