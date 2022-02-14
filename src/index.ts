@@ -4,31 +4,18 @@ import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import nodemailer, { SentMessageInfo } from "nodemailer";
-import bcrypt from "bcrypt";
 import crypto from "crypto";
 import fs from "fs";
-import { MailOptions } from "nodemailer/lib/smtp-transport";
-import Handlebars from "handlebars";
 import cookieParser from "cookie-parser";
-import {
-  addSession,
-  AuthLevel,
-  CustomRequest,
-  dbResultToUser,
-  getUser,
-  User,
-} from "./auth";
-import { FieldInfo, MysqlError } from "mysql";
+import { addSession, AuthLevel, dbResultToUser, getUser, User } from "./auth";
 import { sendOTPEmail, sendVerificationEmail } from "./email";
-import Query from "mysql2/typings/mysql/lib/protocol/sequences/Query";
-import { env } from "process";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
 dotenv.config();
 const HOST = "https://nachhilfe.3nt3.de/api";
 
-const logger = (req: express.Request, res: any, next: any) => {
+const logger = (req: express.Request, _: any, next: any) => {
   console.log(`${req.method} ${req.path}`);
   next();
 };
@@ -481,7 +468,9 @@ app.put("/user", (req: express.Request, res: express.Response) => {
     if (changes.subjects) {
       /* --- insert new offers --- */
       // get the intersection
-      const intersection = Object.keys(req.body.subjects);
+      const newSubjects = Object.keys(req.body.subjects);
+
+      return;
 
       /* --- update existing offers --- */
       // TODO: refactor this to use one sql statement instead of multiple?

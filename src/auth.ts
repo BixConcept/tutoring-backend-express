@@ -1,6 +1,5 @@
 import { NextFunction } from "express";
 import { QueryError } from "mysql2";
-import { nextTick } from "process";
 import { db } from ".";
 
 export interface CustomRequest extends Express.Request {
@@ -17,6 +16,15 @@ export interface User {
   grade: number;
   createdAt: Date;
   updatedAt: Date;
+  offers: Offer[];
+}
+
+export interface Offer {
+  id: number;
+  userId: number;
+  subject: string;
+  maxGrade: number;
+  createdAt: Date;
 }
 
 export enum AuthLevel {
@@ -25,17 +33,13 @@ export enum AuthLevel {
   Admin = 2,
 }
 
-export const getUser = (
-  req: any,
-  res: Express.Response,
-  next: NextFunction
-) => {
-  const statement = `SELECT user.* FROM user, session, offer WHERE user.id = session.user_id AND session.token = ? AND offer.user_id = user.id;`;
+export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
+  const statement = `SELECT user.* FROM user, session WHERE user.id = session.user_id AND session.token = ?`;
 
   /* 
-  user                                                                                                                   || offer 
-  -----------------------------------------------------------------------------------------------------------------------||-------------------------------------------------|
-  user_id | email | name | phone_number | grade | misc | password_hash | auth | created_at | updated_at | last_activity  || id | user_id | subject | max_grade | created_at | 
+  | user                                                                                                                   || offer                                           |
+  |------------------------------------------------------------------------------------------------------------------------||-------------------------------------------------|
+  | user_id | email | name | phone_number | grade | misc | password_hash | auth | created_at | updated_at | last_activity  || id | user_id | subject | max_grade | created_at | 
   */
 
   db.query(
@@ -49,17 +53,35 @@ export const getUser = (
         return;
       }
 
-      console.log(values);
-
       if (values && values.length > 0) {
         req.user = dbResultToUser(values[0]);
         req.isAuthenticated = true;
+
+        db.query(
+          `SELECT
+             offer.id AS id,
+             offer.user_id AS userId,
+             offer.subject AS subject,
+             offer.max_grade AS maxGrade,
+             offer.created_at AS createdAt
+           FROM offer WHERE user_id = ?`,
+          [values[0].id],
+          (err: QueryError | null, values: any) => {
+            if (err) {
+              console.error(err);
+              next();
+              return;
+            }
+
+            req.user.offers = values;
+            next();
+          }
+        );
       } else {
         req.user = undefined;
         req.isAuthenticated = false;
+        next();
       }
-
-      next();
     }
   );
 };
@@ -76,6 +98,17 @@ export const dbResultToUser = (r: any): User => {
     grade: r.grade,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    offers: [], // this is overwritten later since the offers are queried seperately
+  };
+};
+
+export const dbResultToOffer = (r: any): Offer => {
+  return {
+    id: r.id,
+    userId: r.user_id,
+    subject: r.subject,
+    maxGrade: r.max_grade,
+    createdAt: r.created_at,
   };
 };
 
