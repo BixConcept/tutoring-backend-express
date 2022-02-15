@@ -37,11 +37,12 @@ app.use(
     credentials: true,
   })
 );
-app.use(cookieParser());
-app.use(logger);
-app.use(getUser);
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app
+.use(cookieParser())
+.use(logger)
+.use(getUser)
+.use(bodyParser.json())
+.use(bodyParser.urlencoded({ extended: true }));
 
 // create connection
 export const db = mysql.createConnection({
