@@ -61,7 +61,7 @@ INSERT INTO `subject` (`id`, `name`) VALUES
 (19, 'Philosophie'),
 (20, 'Physik'),
 (21, 'Physik'),
-(22, 'Politik/SoWi')
+(22, 'Politik/SoWi'),
 (187, 'Fortnite');
 
 
