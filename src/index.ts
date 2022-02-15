@@ -7,14 +7,9 @@ import nodemailer, { SentMessageInfo } from "nodemailer";
 import crypto from "crypto";
 import fs from "fs";
 import cookieParser from "cookie-parser";
-import {
-  addSession,
-  AuthLevel,
-  dbResultToUser,
-  getUser,
-  Offer,
-  User,
-} from "./auth";
+import { addSession, dbResultToUser, getUser } from "./auth";
+import { AuthLevel, Subject, User } from "./models";
+
 import { sendOTPEmail, sendVerificationEmail } from "./email";
 
 const app = express();
@@ -91,8 +86,14 @@ const checkEmailValidity = (email: string): boolean => {
 };
 
 // routes
-app.get("/", (req: express.Request, res: express.Response) => {
-  res.json(["/find", "/user/register", "/user/verify", "/user/login"]);
+app.get("/", (_: express.Request, res: express.Response) => {
+  res.json([
+    "/find",
+    "/user/register",
+    "/user/verify",
+    "/user/otp",
+    "/subjects",
+  ]);
 });
 
 // list matching offers
@@ -548,6 +549,17 @@ app.get("/user/logout", (req: express.Request, res: express.Response) => {
     res.clearCookie("session-keks").json({ msg: "logged out" });
   }
   return res.status(204);
+});
+
+app.get("/subjects", async (req: express.Request, res: express.Response) => {
+  db.query("SELECT * FROM subject", (err: any, results: Subject[]) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ msg: "internal server error" });
+    }
+
+    return res.json({ content: results });
+  });
 });
 
 /* app.post("/user/update", (req: express.Request, res: express.Response) => {

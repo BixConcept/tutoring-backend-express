@@ -1,38 +1,7 @@
 import { NextFunction } from "express";
 import { QueryError } from "mysql2";
 import { db } from ".";
-
-export interface CustomRequest extends Express.Request {
-  isAuthenticated: boolean;
-  user?: User; // FIXME: real user type
-}
-
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  phoneNumber?: string;
-  authLevel: AuthLevel;
-  grade: number;
-  createdAt: Date;
-  updatedAt: Date;
-  offers: Offer[];
-}
-
-export interface Offer {
-  id: number;
-  userId: number;
-  subjectId: number;
-  subjectName: string;
-  maxGrade: number;
-  createdAt: Date;
-}
-
-export enum AuthLevel {
-  Unverified = 0,
-  Verified = 1,
-  Admin = 2,
-}
+import { Offer, User } from "./models";
 
 export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
   const statement = `SELECT user.* FROM user, session WHERE user.id = session.user_id AND session.token = ?`;
