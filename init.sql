@@ -1,5 +1,5 @@
 -- User Tabelle erzeugen
-CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
+CREATE TABLE IF NOT EXISTS `nachhilfe`.`user` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
@@ -15,8 +15,14 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     UNIQUE(email)
 );
 
+CREATE TABLE IF NOT EXISTS `nachhilfe`.`subject` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    PRIMARY KEY (`id`)
+);
+
 -- offer table
-CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
+CREATE TABLE IF NOT EXISTS `nachhilfe`.`offer` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `user_id` INT NOT NULL,
     `subject_id` INT NOT NULL,
@@ -27,23 +33,24 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
     FOREIGN KEY (`subject_id`) REFERENCES subject (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
+CREATE TABLE IF NOT EXISTS `nachhilfe`.`subject` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(50) NOT NULL,
     PRIMARY KEY (`id`)
 );
 
 -- request table
-CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
+CREATE TABLE IF NOT EXISTS `nachhilfe`.`request` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `subject_id` INT NOT NULL,
     `grade` INT NOT NULL,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`subject_id`) REFERENCES subject (id) ON DELETE CASCADE
 );
 
 -- verification_codes table
-CREATE TABLE IF NOT EXISTS `tutoring`.`verification_token` (
+CREATE TABLE IF NOT EXISTS `nachhilfe`.`verification_token` (
     `token` VARCHAR(64) NOT NULL,
     `user_id` INT NOT NULL,
     PRIMARY KEY (`token`),
@@ -51,10 +58,11 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`verification_token` (
 );
 
 -- sessions table
-CREATE TABLE IF NOT EXISTS `tutoring`.`session` (
+CREATE TABLE IF NOT EXISTS `nachhilfe`.`session` (
     `token` VARCHAR(64) NOT NULL,
     `user_id` INT NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`token`),
     FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
 )
+

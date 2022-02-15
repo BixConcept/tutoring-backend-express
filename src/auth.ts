@@ -22,7 +22,8 @@ export interface User {
 export interface Offer {
   id: number;
   userId: number;
-  subject: string;
+  subjectId: number;
+  subjectName: string;
   maxGrade: number;
   createdAt: Date;
 }
@@ -39,7 +40,7 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
   /* 
   | user                                                                                                                   || offer                                           |
   |------------------------------------------------------------------------------------------------------------------------||-------------------------------------------------|
-  | user_id | email | name | phone_number | grade | misc | password_hash | auth | created_at | updated_at | last_activity  || id | user_id | subject | max_grade | created_at | 
+  | user_id | email | name | phone_number | grade | misc | password_hash | auth | created_at | updated_at | last_activity  || id | user_id | subject_id | max_grade | created_at | 
   */
 
   db.query(
@@ -61,10 +62,11 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
           `SELECT
              offer.id AS id,
              offer.user_id AS userId,
-             offer.subject AS subject,
-             offer.max_grade AS maxGrade,
+             offer.subject_id AS subject_id,
+             subject.name AS subject_name,
+             offer.mx_grade AS maxGrade,
              offer.created_at AS createdAt
-           FROM offer WHERE user_id = ?`,
+           FROM offer, subject WHERE user_id = ? AND offer.subject_id = subject.id`,
           [values[0].id],
           (err: QueryError | null, values: any) => {
             if (err) {
@@ -106,7 +108,8 @@ export const dbResultToOffer = (r: any): Offer => {
   return {
     id: r.id,
     userId: r.user_id,
-    subject: r.subject,
+    subjectId: r.subject_id,
+    subjectName: r.subject_name,
     maxGrade: r.max_grade,
     createdAt: r.created_at,
   };
