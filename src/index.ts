@@ -178,9 +178,10 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
   }
   // check if the given subjed ids are valid
   const givenIds = Object.keys(subjects);
-  const query = `SELECT id, name FROM subject WHERE id IN (${givenIds
-    .join(", ")
-    .slice(0, givenIds.length > 1 ? -1 : givenIds.length)});`;
+  const query = `SELECT id, name FROM subject WHERE id IN (${givenIds.join(
+    ","
+  )});`;
+  console.log(query);
 
   db.query(query, (err: any, values: any) => {
     if (err) {
@@ -267,10 +268,10 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
         // delete the verification code
         // this is not critical, so we don't check for errors
         // the only consequence this could have is spamming the database
-        // db.execute(
-        //   "DELETE FROM verification_token WHERE verification_token.id = ?",
-        //   [code]
-        // );
+        db.execute(
+          "DELETE FROM verification_token WHERE verification_token.token = ?",
+          [code]
+        );
 
         const token: string = generateCode(64);
         addSession(token, values[1][0].id);
@@ -551,7 +552,7 @@ app.get("/user/logout", (req: express.Request, res: express.Response) => {
   return res.status(204);
 });
 
-app.get("/subjects", async (req: express.Request, res: express.Response) => {
+app.get("/subjects", async (_: express.Request, res: express.Response) => {
   db.query("SELECT * FROM subject", (err: any, results: Subject[]) => {
     if (err) {
       console.error(err);
