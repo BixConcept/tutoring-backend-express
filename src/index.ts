@@ -112,12 +112,14 @@ app.post("/find", (req: express.Request, res: express.Response) => {
         user.phone_number AS phone_number,
         user.grade AS grade,
         offer.subject_id AS subject_id,
+        subject.name AS subject_name,
         user.misc
     FROM
-        user, offer
+        offer 
+    INNER JOIN user ON offer.user_id = user.id
+    INNER JOIN subject ON subject.id = offer.subject_id
     WHERE
-        user.id = offer.user_id
-        AND offer.subject_id = ?
+        offer.subject_id = ?
         AND offer.max_grade >= ?
         AND user.auth >= 1`;
 
