@@ -1,5 +1,5 @@
 -- User Tabelle erzeugen
-CREATE TABLE IF NOT EXISTS `nachhilfe`.`user` (
+CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
@@ -15,14 +15,14 @@ CREATE TABLE IF NOT EXISTS `nachhilfe`.`user` (
     UNIQUE(email)
 );
 
-CREATE TABLE IF NOT EXISTS `nachhilfe`.`subject` (
+CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
     `id` int NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(50) NOT NULL,
     PRIMARY KEY (`id`)
 );
 
 -- offer table
-CREATE TABLE IF NOT EXISTS `nachhilfe`.`offer` (
+CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `user_id` INT NOT NULL,
     `subject_id` INT NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `nachhilfe`.`offer` (
     FOREIGN KEY (`subject_id`) REFERENCES subject (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS `nachhilfe`.`subject` (
+CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(50) NOT NULL,
     PRIMARY KEY (`id`)
@@ -69,7 +69,7 @@ INSERT INTO `subject` (`id`, `name`) VALUES
 ALTER TABLE subject ORDER By name;
 
 -- request table
-CREATE TABLE IF NOT EXISTS `nachhilfe`.`request` (
+CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `subject_id` INT NOT NULL,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `nachhilfe`.`request` (
 );
 
 -- verification_codes table
-CREATE TABLE IF NOT EXISTS `nachhilfe`.`verification_token` (
+CREATE TABLE IF NOT EXISTS `tutoring`.`verification_token` (
     `token` VARCHAR(64) NOT NULL,
     `user_id` INT NOT NULL,
     PRIMARY KEY (`token`),
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `nachhilfe`.`verification_token` (
 );
 
 -- sessions table
-CREATE TABLE IF NOT EXISTS `nachhilfe`.`session` (
+CREATE TABLE IF NOT EXISTS `tutoring`.`session` (
     `token` VARCHAR(64) NOT NULL,
     `user_id` INT NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

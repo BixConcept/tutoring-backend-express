@@ -8,17 +8,16 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=asdfasdf
-      - MYSQL_USER=nachhilfe
-      - MYSQL_PASSWORD=garnichts
-      - MYSQL_DATABASE=nachhilfe
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
     ports:
       - "3306:3306"
   pma:
     image: phpmyadmin:latest
     restart: always
     ports:
-      - "8000:80"
+      - "8001:80"
     environment:
       - PMA_ARBITRARY=1
 

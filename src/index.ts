@@ -80,6 +80,7 @@ fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
       })
     );
 });
+console.log("done doing things");
 
 // check if email is a school given email
 const checkEmailValidity = (email: string): boolean => {
