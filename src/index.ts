@@ -28,20 +28,21 @@ const logger = (req: express.Request, _: any, next: any) => {
 };
 
 // APP USE
-app.use(
-  cors({
-    origin:
-      process.env.NODE_ENV === "PRODUCTION"
-        ? "https://nachhilfe.3nt3.de"
-        : "http://localhost:3000",
-    credentials: true,
-  })
-)
-.use(cookieParser())
-.use(logger)
-.use(getUser)
-.use(bodyParser.json())
-.use(bodyParser.urlencoded({ extended: true }));
+app
+  .use(
+    cors({
+      origin:
+        process.env.NODE_ENV === "PRODUCTION"
+          ? "https://nachhilfe.3nt3.de"
+          : "http://localhost:3000",
+      credentials: true,
+    })
+  )
+  .use(cookieParser())
+  .use(logger)
+  .use(getUser)
+  .use(bodyParser.json())
+  .use(bodyParser.urlencoded({ extended: true }));
 
 // create connection
 export const db = mysql.createConnection({
