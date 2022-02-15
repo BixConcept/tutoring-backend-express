@@ -521,7 +521,7 @@ app.put("/user", (req: express.Request, res: express.Response) => {
           Object.keys(changes.subjects).forEach((subject: string) => {
             db.execute(
               `INSERT INTO offer (subject, max_grade, user_id) VALUES (?, ?, ?)`,
-              [subject, changes.subjects[subject], req.user.id],
+              [subject, changes.subjects[subject], req.user?.id],
               (error: QueryError | null) => {
                 if (error) {
                   console.error(error);
