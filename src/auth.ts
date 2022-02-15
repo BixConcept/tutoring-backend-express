@@ -33,7 +33,7 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
              offer.user_id AS userId,
              offer.subject_id AS subject_id,
              subject.name AS subject_name,
-             offer.mx_grade AS maxGrade,
+             offer.max_grade AS maxGrade,
              offer.created_at AS createdAt
            FROM offer, subject WHERE user_id = ? AND offer.subject_id = subject.id`,
           [values[0].id],
