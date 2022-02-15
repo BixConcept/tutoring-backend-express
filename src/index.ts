@@ -181,7 +181,6 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
   const query = `SELECT id, name FROM subject WHERE id IN (${givenIds.join(
     ","
   )});`;
-  console.log(query);
 
   db.query(query, (err: any, values: any) => {
     if (err) {
