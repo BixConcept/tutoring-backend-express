@@ -39,6 +39,35 @@ CREATE TABLE IF NOT EXISTS `nachhilfe`.`subject` (
     PRIMARY KEY (`id`)
 );
 
+INSERT INTO `subject` (`id`, `name`) VALUES
+(1, 'Biologie'),
+(2, 'Chemie'),
+(3, 'Deutsch'),
+(4, 'Deutsch'),
+(5, 'Englisch'),
+(6, 'Englisch'),
+(7, 'Erdkunde'),
+(8, 'ev. Religion'),
+(9, 'Französisch'),
+(10, 'Geschichte'),
+(11, 'Informatik'),
+(12, 'kath. Reli'),
+(13, 'Kunst'),
+(14, 'Latein'),
+(15, 'Mathematik'),
+(16, 'Mathematik'),
+(17, 'Musik'),
+(18, 'Pädagogik'),
+(19, 'Philosophie'),
+(20, 'Physik'),
+(21, 'Physik'),
+(22, 'Politik/SoWi')
+(187, 'Fortnite');
+
+
+
+ALTER TABLE subject ORDER By name;
+
 -- request table
 CREATE TABLE IF NOT EXISTS `nachhilfe`.`request` (
     `id` INT NOT NULL AUTO_INCREMENT,
