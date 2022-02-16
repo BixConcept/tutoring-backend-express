@@ -67,14 +67,18 @@ const transporter = nodemailer.createTransport({
 
 // this reads the file which contains seperate sql statements seperated by a single empty line and executes them seperately.
 fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
-  if (err && err.code !== "ER_DUP_ENTRY") return console.error(err);
+  if (err) return console.error(err);
   data
     .toString()
     .split(";")
     .forEach((command) =>
       db.execute(command, (err) => {
         // if there is an error that is relevant
-        if (err && err.code !== "ER_EMPTY_QUERY") {
+        if (
+          err &&
+          err.code !== "ER_EMPTY_QUERY" &&
+          err.code !== "ER_DUP_ENTRY"
+        ) {
           console.error(err);
         }
       })
