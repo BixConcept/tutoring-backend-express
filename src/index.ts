@@ -584,7 +584,10 @@ app.get("/subjects", async (_: express.Request, res: express.Response) => {
 });
 
 app.get("/offers", (req: express.Request, res: express.Response) => {
-  if (req.user?.authLevel === AuthLevel.Admin) {
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+  if (req.user.authLevel === AuthLevel.Admin) {
     db.query("SELECT * FROM offer", (err: any, results: any) => {
       return res.json({ content: results });
     });

@@ -75,15 +75,15 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
     `subjectId` INT NOT NULL,
     `grade` INT NOT NULL,
     PRIMARY KEY (`id`),
-    FOREIGN KEY (`subject_id`) REFERENCES subject (id) ON DELETE CASCADE
+    FOREIGN KEY (`subjectId`) REFERENCES subject (id) ON DELETE CASCADE
 );
 
 -- verification_codes table
-CREATE TABLE IF NOT EXISTS `tutoring`.`verification_token` (
+CREATE TABLE IF NOT EXISTS `tutoring`.`verificationToken` (
     `token` VARCHAR(64) NOT NULL,
     `userId` INT NOT NULL,
     PRIMARY KEY (`token`),
-    FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
+    FOREIGN KEY (`userId`) REFERENCES user (id) ON DELETE CASCADE
 );
 
 -- sessions table

@@ -4,7 +4,7 @@ import { db } from ".";
 import { Offer, User } from "./models";
 
 export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
-  const statement = `SELECT user.* FROM user, session WHERE user.id = session.user_id AND session.token = ?`;
+  const statement = `SELECT user.* FROM user, session WHERE user.id = session.userId AND session.token = ?`;
 
   /* 
   | user                                                                                                                   || offer                                           |
@@ -30,12 +30,12 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
         db.query(
           `SELECT
              offer.id AS id,
-             offer.user_id AS userId,
-             offer.subject_id AS subject_id,
-             subject.name AS subject_name,
+             offer.userId AS userId,
+             offer.subjectId AS subjectId,
+             subject.name AS subjectName,
              offer.max_grade AS maxGrade,
              offer.created_at AS createdAt
-           FROM offer, subject WHERE user_id = ? AND offer.subject_id = subject.id`,
+           FROM offer, subject WHERE userId = ? AND offer.subjectId = subject.id`,
           [values[0].id],
           (err: QueryError | null, values: any) => {
             if (err) {
@@ -73,19 +73,8 @@ export const dbResultToUser = (r: any): User => {
   };
 };
 
-export const dbResultToOffer = (r: any): Offer => {
-  return {
-    id: r.id,
-    userId: r.user_id,
-    subjectId: r.subject_id,
-    subjectName: r.subject_name,
-    maxGrade: r.max_grade,
-    createdAt: r.created_at,
-  };
-};
-
 export const addSession = (token: string, userID: number): void => {
-  const statement = "INSERT INTO session (token, user_id) VALUES (?, ?)";
+  const statement = "INSERT INTO session (token, userId) VALUES (?, ?)";
   db.execute(statement, [token, userID], (err) => {
     console.error(err);
   });
