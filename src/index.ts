@@ -8,7 +8,7 @@ import crypto from "crypto";
 import fs from "fs";
 import cookieParser from "cookie-parser";
 import { addSession, dbResultToUser, getUser } from "./auth";
-import { AuthLevel, Subject, User } from "./models";
+import { AuthLevel, Offer, Subject, User } from "./models";
 
 import { sendOTPEmail, sendVerificationEmail } from "./email";
 
@@ -588,7 +588,28 @@ app.get("/offers", (req: express.Request, res: express.Response) => {
     return res.status(401).json({ msg: "unauthorized" });
   }
   if (req.user.authLevel === AuthLevel.Admin) {
-    db.query("SELECT * FROM offer", (err: any, results: any) => {
+    db.query("SELECT * FROM offer", (err: any, results: Offer[]) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ msg: "internal server error" });
+      }
+      return res.json({ content: results });
+    });
+  } else {
+    return res.status(403).json({ msg: "forbidden" });
+  }
+});
+
+app.get("/users", (req: express.Request, res: express.Response) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+  if (req.user.authLevel === AuthLevel.Admin) {
+    db.query("SELECT * FROM user", (err: any, results: User[]) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ msg: "internal server error" });
+      }
       return res.json({ content: results });
     });
   } else {
