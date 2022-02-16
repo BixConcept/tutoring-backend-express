@@ -105,23 +105,23 @@ app.post("/find", (req: express.Request, res: express.Response) => {
 
   const query: string = `-- sql
     SELECT
-        user.id AS user_id,
-        offer.id AS offer_id,
+        user.id AS userId,
+        offer.id AS offerId,
         user.name AS name,
         user.email AS email,
-        offer.max_grade AS max_grade,
-        user.phone_number AS phone_number,
+        offer.maxGrade AS maxGrade,
+        user.phoneNumber AS phoneNumber,
         user.grade AS grade,
-        offer.subject_id AS subject_id,
-        subject.name AS subject_name,
+        offer.subjectId AS subjectId,
+        subject.name AS subjectName,
         user.misc
     FROM
         offer 
-    INNER JOIN user ON offer.user_id = user.id
-    INNER JOIN subject ON subject.id = offer.subject_id
+    INNER JOIN user ON offer.userId = user.id
+    INNER JOIN subject ON subject.id = offer.subjectId
     WHERE
-        offer.subject_id = ?
-        AND offer.max_grade >= ?
+        offer.subjectId = ?
+        AND offer.maxGrade >= ?
         AND user.auth >= 1`;
 
   // TODO: return as seperate objects (instead of user_id -> user: {id:})
@@ -180,8 +180,16 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
       .status(400)
       .json({ msg: "invalid grade, must be >= 5 and <= 13" });
   }
+
   // check if the given subjed ids are valid
   const givenIds = Object.keys(subjects);
+
+  if (givenIds.length === 0) {
+    return res
+      .status(400)
+      .json({ msg: "you have to specify subjects you want to teach" });
+  }
+
   const query = `SELECT id, name FROM subject WHERE id IN (${givenIds.join(
     ","
   )});`;
@@ -199,7 +207,7 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
         .json({ msg: `some of the given subject ids are invalid` });
     }
 
-    const sqlCommand: string = `INSERT INTO user (email, name, auth, updated_at, misc, grade) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?); SELECT LAST_INSERT_ID();`;
+    const sqlCommand: string = `INSERT INTO user (email, name, auth, updatedAt, misc, grade) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?); SELECT LAST_INSERT_ID();`;
     db.query(
       sqlCommand,
       [email, emailToName(email), misc, grade],
@@ -210,7 +218,7 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
               .status(409)
               .json({ msg: "a user with that email address already exists." });
           }
-          console.error(err);
+          console.error("error inserting", err);
           return res.json({ msg: "internal server error" }).status(500);
         }
 
@@ -218,7 +226,7 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
 
         // add offer for each selected subject
         Object.keys(subjects).forEach((key: any) => {
-          const stmt: string = `INSERT INTO offer (user_id, subject_id, max_grade) VALUES (?, ?, ?)`;
+          const stmt: string = `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?)`;
           db.execute(
             stmt,
             [id, key, subjects[key]],
@@ -232,7 +240,7 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
 
         let code: string = generateCode(32);
         db.query(
-          "INSERT INTO verification_token (token, user_id) VALUES (?, ?)",
+          "INSERT INTO verificationToken (token, userId) VALUES (?, ?)",
           [code, id]
         );
 
@@ -253,7 +261,7 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
 
   // check if there are any codes that match the one given
   db.query(
-    "SELECT COUNT(1) FROM verification_token WHERE verification_token.token = ?;",
+    "SELECT COUNT(1) FROM verificationToken WHERE verificationToken.token = ?;",
     [code],
     (err: any, results: any) => {
       // if not, return error
@@ -263,7 +271,7 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
       }
 
       // update the user record and set user.auth = 1
-      const sqlCommand = `UPDATE user, verification_token SET user.auth = 1 WHERE user.id = verification_token.user_id AND verification_token.token = ?; SELECT user.id FROM user, verification_token WHERE user.id = verification_token.user_id AND verification_token.token = ?`;
+      const sqlCommand = `UPDATE user, verificationToken SET user.auth = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ?; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
       db.query(sqlCommand, [code, code], (err: Error | null, values: any) => {
         // I hope this checks for everything
         if (err) return res.status(401).json({ msg: "invalid code" });
@@ -272,7 +280,7 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
         // this is not critical, so we don't check for errors
         // the only consequence this could have is spamming the database
         db.execute(
-          "DELETE FROM verification_token WHERE verification_token.token = ?",
+          "DELETE FROM verificationToken WHERE verificationToken.token = ?",
           [code]
         );
 
@@ -368,7 +376,7 @@ app.post("/user/otp", (req: express.Request, res: express.Response) => {
 
       let code = generateCode(32);
       db.execute(
-        "INSERT INTO verification_token (token, user_id) VALUES (?, ?)",
+        "INSERT INTO verificationToken (token, userId) VALUES (?, ?)",
         [code, results[0].id],
         (err) => {
           if (err) {
@@ -487,7 +495,7 @@ app.put("/user", (req: express.Request, res: express.Response) => {
     let updated = { ...oldUser, ...changes };
 
     db.query(
-      "UPDATE user SET id = ?, email = ?, name = ?, phone_number = ?, grade = ?, auth = ? WHERE id = ?",
+      "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, auth = ? WHERE id = ?",
       [
         updated.id,
         updated.email,
@@ -511,7 +519,7 @@ app.put("/user", (req: express.Request, res: express.Response) => {
       // first delete everything, then insert new ones
       // this is not the correctest way to do this, but it is a whole lot more performant than doing something with O(n^3)
       db.execute(
-        `DELETE FROM offer WHERE user_id = ?`,
+        `DELETE FROM offer WHERE userId = ?`,
         [req.user.id],
         (err: any | null) => {
           if (err) {
@@ -521,7 +529,7 @@ app.put("/user", (req: express.Request, res: express.Response) => {
 
           Object.keys(changes.subjects).forEach((subject: string) => {
             db.execute(
-              `INSERT INTO offer (subject, max_grade, user_id) VALUES (?, ?, ?)`,
+              `INSERT INTO offer (subject, maxGrade, userId) VALUES (?, ?, ?)`,
               [subject, changes.subjects[subject], req.user?.id],
               (error: QueryError | null) => {
                 if (error) {
@@ -564,6 +572,16 @@ app.get("/subjects", async (_: express.Request, res: express.Response) => {
 
     return res.json({ content: results });
   });
+});
+
+app.get("/offers", (req: express.Request, res: express.Response) => {
+  if (req.user?.authLevel === AuthLevel.Admin) {
+    db.query("SELECT * FROM offer", (err: any, results: any) => {
+      return res.json({ content: results });
+    });
+  } else {
+    return res.status(403).json({ msg: "forbidden" });
+  }
 });
 
 /* app.post("/user/update", (req: express.Request, res: express.Response) => {

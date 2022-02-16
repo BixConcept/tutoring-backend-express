@@ -3,14 +3,13 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
-    `phone_number` VARCHAR(20) NULL,
+    `phoneNumber` VARCHAR(20) NULL,
     `grade` INT NOT NULL,
     `misc` TEXT NULL,
-    `password_hash` VARCHAR(128) NULL,
+    `passwordHash` VARCHAR(128) NULL,
     `auth` INT NOT NULL,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-    `last_activity` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updatedAt` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (`id`),
     UNIQUE(email)
 );
@@ -24,13 +23,13 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
 -- offer table
 CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
     `id` INT NOT NULL AUTO_INCREMENT,
-    `user_id` INT NOT NULL,
-    `subject_id` INT NOT NULL,
-    `max_grade` INT NOT NULL,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `userId` INT NOT NULL,
+    `subjectId` INT NOT NULL,
+    `maxGrade` INT NOT NULL,
+    `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE,
-    FOREIGN KEY (`subject_id`) REFERENCES subject (id) ON DELETE CASCADE
+    FOREIGN KEY (`userId`) REFERENCES user (id) ON DELETE CASCADE,
+    FOREIGN KEY (`subjectId`) REFERENCES subject (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
@@ -72,7 +71,7 @@ ALTER TABLE subject ORDER By name;
 CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
-    `subject_id` INT NOT NULL,
+    `subjectId` INT NOT NULL,
     `grade` INT NOT NULL,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`subject_id`) REFERENCES subject (id) ON DELETE CASCADE
@@ -81,7 +80,7 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
 -- verification_codes table
 CREATE TABLE IF NOT EXISTS `tutoring`.`verification_token` (
     `token` VARCHAR(64) NOT NULL,
-    `user_id` INT NOT NULL,
+    `userId` INT NOT NULL,
     PRIMARY KEY (`token`),
     FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
 );
@@ -89,9 +88,9 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`verification_token` (
 -- sessions table
 CREATE TABLE IF NOT EXISTS `tutoring`.`session` (
     `token` VARCHAR(64) NOT NULL,
-    `user_id` INT NOT NULL,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `userId` INT NOT NULL,
+    `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`token`),
-    FOREIGN KEY (`user_id`) REFERENCES user (id) ON DELETE CASCADE
+    FOREIGN KEY (`userId`) REFERENCES user (id) ON DELETE CASCADE
 )
 
