@@ -67,14 +67,18 @@ const transporter = nodemailer.createTransport({
 
 // this reads the file which contains seperate sql statements seperated by a single empty line and executes them seperately.
 fs.readFile("init.sql", (err: NodeJS.ErrnoException | null, data: Buffer) => {
-  if (err && err.code !== "ER_DUP_ENTRY") return console.error(err);
+  if (err) return console.error(err);
   data
     .toString()
     .split(";")
     .forEach((command) =>
       db.execute(command, (err) => {
         // if there is an error that is relevant
-        if (err && err.code !== "ER_EMPTY_QUERY") {
+        if (
+          err &&
+          err.code !== "ER_EMPTY_QUERY" &&
+          err.code !== "ER_DUP_ENTRY"
+        ) {
           console.error(err);
         }
       })
@@ -214,9 +218,9 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
       (err: mysql.QueryError | null, results: any) => {
         if (err) {
           if (err.code == "ER_DUP_ENTRY") {
-            return res
-              .status(409)
-              .json({ msg: "a user with that email address already exists." });
+            return res.status(409).json({
+              msg: "a user with that email address already exists.",
+            });
           }
           console.error("error inserting", err);
           return res.json({ msg: "internal server error" }).status(500);
@@ -349,9 +353,9 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
 app.post("/user/otp", (req: express.Request, res: express.Response) => {
   const email: string = req.body.email;
   if (!email) {
-    res
-      .status(400)
-      .json({ msg: "you have to specify an email-address to log in" });
+    res.status(400).json({
+      msg: "you have to specify an email-address to log in",
+    });
     return;
   }
 
@@ -366,9 +370,9 @@ app.post("/user/otp", (req: express.Request, res: express.Response) => {
       }
 
       if (results.length < 1) {
-        res
-          .status(400)
-          .json({ msg: "no user with that email address exists." });
+        res.status(400).json({
+          msg: "no user with that email address exists.",
+        });
         return;
       }
 
@@ -475,14 +479,16 @@ app.put("/user", (req: express.Request, res: express.Response) => {
           (err: QueryError | null, result: any) => {
             if (err) {
               console.error(err);
-              res.status(500).json({ msg: "internal serer error" });
+              res.status(500).json({
+                msg: "internal serer error",
+              });
               return;
             }
 
             if (result.length === 0) {
-              return res
-                .status(404)
-                .json({ msg: "the specified user does not exist" });
+              return res.status(404).json({
+                msg: "the specified user does not exist",
+              });
             }
 
             oldUser = dbResultToUser(result[0]);
@@ -564,14 +570,17 @@ app.get("/user/logout", (req: express.Request, res: express.Response) => {
 });
 
 app.get("/subjects", async (_: express.Request, res: express.Response) => {
-  db.query("SELECT * FROM subject", (err: any, results: Subject[]) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ msg: "internal server error" });
-    }
+  db.query(
+    "SELECT * FROM subject WHERE NOT name = 'Fortnite'",
+    (err: any, results: Subject[]) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ msg: "internal server error" });
+      }
 
-    return res.json({ content: results });
-  });
+      return res.json({ content: results });
+    }
+  );
 });
 
 app.get("/offers", (req: express.Request, res: express.Response) => {
