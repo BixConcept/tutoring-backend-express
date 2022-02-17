@@ -704,7 +704,7 @@ app.get("/requests", (req: express.Request, res: express.Response) => {
   if (req.user.authLevel === AuthLevel.Admin) {
     db.query(
       "SELECT request.*, subject.name AS subjectName FROM request, subject WHERE subject.id = request.subjectId",
-      (err: any, results: User[]) => {
+      (err: any, results: any[]) => {
         if (err) {
           console.error(err);
           return res.status(500).json({ msg: "internal server error" });
