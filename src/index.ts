@@ -614,13 +614,16 @@ app.get("/offers", (req: express.Request, res: express.Response) => {
     return res.status(401).json({ msg: "unauthorized" });
   }
   if (req.user.authLevel === AuthLevel.Admin) {
-    db.query("SELECT * FROM offer", (err: any, results: Offer[]) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ msg: "internal server error" });
+    db.query(
+      "SELECT offer.*, subject.name as subjectName FROM offer, subject WHERE subject.id = offer.subjectId",
+      (err: any, results: Offer[]) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ msg: "internal server error" });
+        }
+        return res.json({ content: results });
       }
-      return res.json({ content: results });
-    });
+    );
   } else {
     return res.status(403).json({ msg: "forbidden" });
   }
