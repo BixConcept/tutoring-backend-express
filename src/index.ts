@@ -322,7 +322,8 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
           maxAge: 1000 * 60 * 60 * 24 * 30,
           path: "/",
           httpOnly: true,
-          sameSite: "lax",
+          sameSite: "none",
+          secure: true,
         });
 
         return res.json({ msg: "account was verified" });
