@@ -276,7 +276,7 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
       }
 
       // update the user record and set user.auth = 1
-      const sqlCommand = `UPDATE user, verificationToken SET user.auth = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ?; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
+      const sqlCommand = `UPDATE user, verificationToken SET user.auth = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ? AND user.auth = 0; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
       db.query(sqlCommand, [code, code], (err: Error | null, values: any) => {
         // I hope this checks for everything
         if (err) return res.status(401).json({ msg: "invalid code" });
