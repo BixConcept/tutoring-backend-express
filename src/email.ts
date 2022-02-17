@@ -108,6 +108,8 @@ export async function notifyPeople(
               console.log(info, err);
             }
           );
+
+          db.execute("DELETE FROM request WHERE id = ?", [request.id]);
         });
       });
     }

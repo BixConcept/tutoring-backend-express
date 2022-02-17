@@ -284,10 +284,10 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
         // delete the verification code
         // this is not critical, so we don't check for errors
         // the only consequence this could have is spamming the database
-        // db.execute(
-        //   "DELETE FROM verificationToken WHERE verificationToken.token = ?",
-        //   [code]
-        // );
+        db.execute(
+          "DELETE FROM verificationToken WHERE verificationToken.token = ?",
+          [code]
+        );
 
         const userId: number = values[1][0].id;
 
