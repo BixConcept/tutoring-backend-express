@@ -76,10 +76,16 @@ export async function notifyPeople(
     "SELECT * FROM request WHERE subjectId = ? AND grade <= ?",
     [offer.subjectId, offer.maxGrade],
     (err: any, results: any[]) => {
-      if (err) throw new Error(err);
+      if (err) {
+        console.error(err);
+        return;
+      }
 
       fs.readFile("./src/notification_email.html", (err, data) => {
-        if (err) throw new Error(err.message);
+        if (err) {
+          console.error(err);
+          return;
+        }
 
         const template = Handlebars.compile(data.toString().replace("\n", ""));
 
@@ -98,12 +104,10 @@ export async function notifyPeople(
 
           await transporter.sendMail(
             mailOptions,
-            (err: Error | null, _: SentMessageInfo) => {
-              if (err) console.error(err);
+            (err: Error | null, info: SentMessageInfo) => {
+              console.error(info, err);
             }
           );
-
-          db.execute("DELETE FROM request WHERE id = ?", [request.id]);
         });
       });
     }

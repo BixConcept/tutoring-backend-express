@@ -69,12 +69,17 @@
       <p>Das ist nun eingetroffen!</p>
 
       <div class="card">
-        <h3>{{tutor.name}}, Stufe/Klasse {{tutor.grade}}</h3>
-        <p>Gibt Nachhilfe in <span>{{offer.subject}} bis Stufe {{offer.maxGrade}}</span></p>
-        <p><a href="mailto:{{tutor.email}}">{{tutor.email}}</a></p>
+        <h3>{{ tutor.name }}, Stufe/Klasse {{ tutor.grade }}</h3>
+        <p>
+          Gibt Nachhilfe in
+          <span>{{ offer.subject }} bis Stufe {{ offer.maxGrade }}</span>
+        </p>
+        <p>
+          <a href="mailto:{{ tutor.email }}">{{ tutor.email }}</a>
+        </p>
         {{#if tutor.phoneNumber}}
-        <p>Telefon: {{tutor.phoneNumber}}</p>
-        {{/fi}}
+        <p>Telefon: {{ tutor.phoneNumber }}</p>
+        {{/if}}
       </div>
 
       <br />
@@ -83,7 +88,10 @@
         Diese Mail ist automatisch generiert. Solltest du dich nirgendwo
         registriert haben, kannst du sie E-Mail einfach ignorieren.
       </p>
-      <p class="gray-text">Wenn du hiervon abgemeldet werden willst, melde dich bei <a href="mailto:sv@gymhaan.de">sv@gymhaan.de.</a></p>
+      <p class="gray-text">
+        Wenn du hiervon abgemeldet werden willst, melde dich bei
+        <a href="mailto:sv@gymhaan.de">sv@gymhaan.de.</a>
+      </p>
     </div>
   </body>
 </html>

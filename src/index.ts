@@ -10,7 +10,7 @@ import cookieParser from "cookie-parser";
 import { addSession, dbResultToUser, getUser } from "./auth";
 import { AuthLevel, Offer, Subject, User } from "./models";
 
-import { sendOTPEmail, sendVerificationEmail } from "./email";
+import { sendOTPEmail, sendVerificationEmail, notifyPeople } from "./email";
 
 const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -163,6 +163,7 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
   const subjectsmaybe: { [key: string]: string | number } = req.body.subjects; // because we are not intelligent enough to manage react state
   const misc: string = req.body.misc;
   const grade: number = req.body.grade;
+  const phoneNumber: string = req.body.phoneNumber;
 
   let subjects: { [key: number]: number } = {};
   // converts string grades to numbers
@@ -198,23 +199,23 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
     ","
   )});`;
 
-  db.query(query, (err: any, values: any) => {
+  db.query(query, (err: any, subjects: any) => {
     if (err) {
       console.error(`error querying database for subject with id: ${err}`);
       return res.status(500).json({ msg: "internal server error" });
     }
 
     // return error if the id is invalid
-    if (values.length < givenIds.length) {
+    if (subjects.length < givenIds.length) {
       return res
         .status(400)
         .json({ msg: `some of the given subject ids are invalid` });
     }
 
-    const sqlCommand: string = `INSERT INTO user (email, name, auth, updatedAt, misc, grade) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?); SELECT LAST_INSERT_ID();`;
+    const sqlCommand: string = `INSERT INTO user (email, name, auth, updatedAt, misc, grade, phoneNumber) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?); SELECT LAST_INSERT_ID();`;
     db.query(
       sqlCommand,
-      [email, emailToName(email), misc, grade],
+      [email, emailToName(email), misc, grade, phoneNumber],
       (err: mysql.QueryError | null, results: any) => {
         if (err) {
           if (err.code == "ER_DUP_ENTRY") {
@@ -283,9 +284,38 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
         // delete the verification code
         // this is not critical, so we don't check for errors
         // the only consequence this could have is spamming the database
-        db.execute(
-          "DELETE FROM verificationToken WHERE verificationToken.token = ?",
-          [code]
+        // db.execute(
+        //   "DELETE FROM verificationToken WHERE verificationToken.token = ?",
+        //   [code]
+        // );
+
+        const userId: number = values[1][0].id;
+
+        db.query(
+          "SELECT * FROM user WHERE id = ?",
+          [userId],
+          (err: any, users: any[]) => {
+            if (err) {
+              console.log(err);
+              return;
+            }
+
+            console.log("users", users);
+
+            db.query(
+              "SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE userId = ? AND subject.id = offer.subjectId",
+              [userId],
+              (err: any, offers: any[]) => {
+                if (err) {
+                  console.log(err);
+                  return;
+                }
+                console.log("offers", offers);
+
+                offers.forEach((x) => notifyPeople(transporter, x, users[0]));
+              }
+            );
+          }
         );
 
         const token: string = generateCode(64);
