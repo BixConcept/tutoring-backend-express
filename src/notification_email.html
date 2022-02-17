@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <title></title>
+  </head>
+  <body>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap");
+      body {
+        font-family: "Inter", Roboto, sans-serif;
+      }
+      h1 {
+        text-align: center;
+      }
+      .content {
+        display: flex;
+        flex-direction: column;
+        width: 80vw;
+
+        margin: auto;
+        margin-top: 10vw;
+        padding: 3rem;
+        border-radius: 0.5rem;
+        -moz-box-shadow: inset 0 0 5px #c9c9c9;
+        -webkit-box-shadow: inset 0 0 5px #c9c9c9;
+        box-shadow: inset 0 0 5px #c9c9c9;
+      }
+
+      .submit:visited {
+        color: black;
+      }
+      .gray-text {
+        color: gray;
+        font-style: italic;
+      }
+
+      .card {
+        width: 100%;
+
+        background-color: #e9e9e9;
+        border-radius: 0.5rem;
+        padding: 1rem;
+      }
+      .card * {
+        margin: 0.2rem 0;
+      }
+
+      .card a {
+        color: inherit;
+      }
+
+      .card span {
+        font-weight: bold;
+      }
+
+      .gray-text a {
+        color: dimgray;
+      }
+    </style>
+    <div class="content">
+      <h2>Hey, {{ request.name }}👋</h2>
+      <p>
+        Du hast bei uns angegeben, benachrichtigt werden zu wollen, wenn jemand
+        Nachhilfe, die du brauchst anbietet, weil es zu diesem Zeitpunkt niemand
+        tat.
+      </p>
+
+      <p>Das ist nun eingetroffen!</p>
+
+      <div class="card">
+        <h3>{{tutor.name}}, Stufe/Klasse {{tutor.grade}}</h3>
+        <p>Gibt Nachhilfe in <span>{{offer.subject}} bis Stufe {{offer.maxGrade}}</span></p>
+        <p><a href="mailto:{{tutor.email}}">{{tutor.email}}</a></p>
+        {{#if tutor.phoneNumber}}
+        <p>Telefon: {{tutor.phoneNumber}}</p>
+        {{/fi}}
+      </div>
+
+      <br />
+      <br />
+      <p class="gray-text">
+        Diese Mail ist automatisch generiert. Solltest du dich nirgendwo
+        registriert haben, kannst du sie E-Mail einfach ignorieren.
+      </p>
+      <p class="gray-text">Wenn du hiervon abgemeldet werden willst, melde dich bei <a href="mailto:sv@gymhaan.de">sv@gymhaan.de.</a></p>
+    </div>
+  </body>
+</html>
