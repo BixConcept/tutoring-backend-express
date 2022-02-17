@@ -105,7 +105,7 @@ export async function notifyPeople(
           await transporter.sendMail(
             mailOptions,
             (err: Error | null, info: SentMessageInfo) => {
-              console.error(info, err);
+              console.log(info, err);
             }
           );
         });

@@ -300,8 +300,6 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
               return;
             }
 
-            console.log("users", users);
-
             db.query(
               "SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE userId = ? AND subject.id = offer.subjectId",
               [userId],
@@ -310,7 +308,6 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
                   console.log(err);
                   return;
                 }
-                console.log("offers", offers);
 
                 offers.forEach((x) => notifyPeople(transporter, x, users[0]));
               }
@@ -321,7 +318,6 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
         const token: string = generateCode(64);
         addSession(token, values[1][0].id);
 
-        console.log("successful");
         res.cookie("session-keks", token, {
           maxAge: 1000 * 60 * 60 * 24 * 30,
           path: "/",
