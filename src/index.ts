@@ -234,7 +234,7 @@ app.post("/user/register", (req: express.Request, res: express.Response) => {
           const stmt: string = `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?)`;
           db.execute(
             stmt,
-            [id, key, subjects[key]],
+            [id, key, subjects[key].id],
             (error: mysql.QueryError | null) => {
               if (error) {
                 console.error(error);
@@ -322,7 +322,8 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
           maxAge: 1000 * 60 * 60 * 24 * 30,
           path: "/",
           httpOnly: true,
-          sameSite: "lax",
+          sameSite: "none",
+          secure: true,
         });
 
         return res.json({ msg: "account was verified" });
