@@ -697,4 +697,24 @@ app.post("/request", (req: express.Request, res: express.Response) => {
   );
 });
 
+app.get("/requests", (req: express.Request, res: express.Response) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+  if (req.user.authLevel === AuthLevel.Admin) {
+    db.query(
+      "SELECT request.*, subject.name AS subjectName FROM request, subject WHERE subject.id = request.subjectId",
+      (err: any, results: User[]) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ msg: "internal server error" });
+        }
+        return res.json({ content: results });
+      }
+    );
+  } else {
+    return res.status(403).json({ msg: "forbidden" });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}🐹🐹`));
