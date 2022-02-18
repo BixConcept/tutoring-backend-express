@@ -36,3 +36,11 @@ export interface NotificationRequest {
   grade: number;
   subjectId: number;
 }
+
+export interface ApiRequest {
+  id: number;
+  method: string;
+  authLevel: AuthLevel;
+  path: string;
+  time: Date;
+}

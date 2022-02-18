@@ -60,8 +60,6 @@ INSERT INTO `subject` (`id`, `name`) VALUES
 (19, 'Spanisch'),
 (187, 'Fortnite');
 
-
-
 ALTER TABLE subject ORDER By name;
 
 -- request table
@@ -89,5 +87,15 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`session` (
     `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`token`),
     FOREIGN KEY (`userId`) REFERENCES user (id) ON DELETE CASCADE
-)
+);
 
+-- nice statistics for admin dashboard + anonym
+CREATE TABLE IF NOT EXISTS `tutoring`.`apiRequest` (
+    id INT NOT NULL AUTO_INCREMENT,
+    method VARCHAR(10) NOT NULL,
+    authLevel 
+    INT NOT NULL DEFAULT 0,
+    path VARCHAR(255) NOT NULL,
+    time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);

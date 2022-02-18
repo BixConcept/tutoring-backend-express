@@ -8,7 +8,7 @@ import crypto from "crypto";
 import fs from "fs";
 import cookieParser from "cookie-parser";
 import { addSession, dbResultToUser, getUser } from "./auth";
-import { AuthLevel, Offer, Subject, User } from "./models";
+import { AuthLevel, Offer, Subject, User, ApiRequest } from "./models";
 
 import { sendOTPEmail, sendVerificationEmail, notifyPeople } from "./email";
 
@@ -19,6 +19,13 @@ const HOST = "https://nachhilfe.3nt3.de/api";
 
 const logger = (req: express.Request, _: any, next: any) => {
   console.log(`${req.method} ${req.path}`);
+  db.execute(
+    `INSERT INTO apiRequest (method, authLevel, path) VALUES (?, ?, ?)`,
+    [req.method, req.user === undefined ? 0 : req.user.authLevel, req.path],
+    (err) => {
+      if (err) console.error(err);
+    }
+  );
   next();
 };
 
@@ -28,14 +35,14 @@ app
     cors({
       origin:
         process.env.NODE_ENV === "PRODUCTION"
-          ? "https://nachhilfe.3nt3.de"
+          ? ["https://nachhilfe.3nt3.de", "https://nachhilfe.sanberk.xyz"]
           : "http://localhost:3000",
       credentials: true,
     })
   )
   .use(cookieParser())
-  .use(logger)
   .use(getUser)
+  .use(logger)
   .use(bodyParser.json())
   .use(bodyParser.urlencoded({ extended: true }));
 
@@ -331,50 +338,6 @@ app.get("/user/verify", (req: express.Request, res: express.Response) => {
     }
   );
 });
-
-// Login
-// app.post("/user/login", (req: express.Request, res: express.Response) => {
-//   const { email, password } = req.body;
-
-//   db.query(
-//     "SELECT * FROM users WHERE email = ?",
-//     [email],
-//     async (error: any, results: any, fields: any) => {
-//       if (error) return res.status(500).json({ msg: "internal server error" });
-
-//       if (results.length > 0) {
-//         const comparision = await bcrypt.compare(
-//           password,
-//           results[0]["password_hash"]
-//         );
-//         if (comparision) {
-//           const token: string = generateCode(64);
-
-//           db.execute(
-//             "INSERT INTO session (token, user_id) VALUES (?, ?)",
-//             [token, results[0].id],
-//             (err: QueryError | null) => {
-//               if (err) {
-//                 console.error(err);
-//                 return res.status(500).json({ msg: "internal server error" });
-//               }
-
-//               res
-//                 .cookie("session-keks", token, {
-//                   maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days in milliseconds
-//                 })
-//                 .json({ msg: "Successfully logged in", content: results[0] });
-//             }
-//           );
-//         } else {
-//           return res.json({ msg: "invaid credentials" }).status(401);
-//         }
-//       } else {
-//         return res.json({ code: 401, msg: "user not found" });
-//       }
-//     }
-//   );
-// });
 
 // send link/one time password to email address
 app.post("/user/otp", (req: express.Request, res: express.Response) => {
@@ -717,4 +680,19 @@ app.get("/requests", (req: express.Request, res: express.Response) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}🐹🐹`));
+app.get("/apiRequests", (req: express.Request, res: express.Response) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+  if (req.user.authLevel === AuthLevel.Admin) {
+    db.query("SELECT * FROM apiRequest", [], (err: any, results: any[]) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ msg: "internal server error" });
+      }
+      return res.json({ content: results });
+    });
+  } else return res.status(403).json({ msg: "forbidden" });
+});
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT} 🐹🐹`));
