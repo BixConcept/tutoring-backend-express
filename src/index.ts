@@ -19,6 +19,7 @@ const HOST = "https://nachhilfe.3nt3.de/api";
 
 const logger = (req: express.Request, _: any, next: any) => {
   console.log(req.ip);
+  console.log(req.headers["X-Real-IP"]);
   console.log(`${req.method} ${req.path}`);
   db.execute(
     `INSERT INTO apiRequest (method, authLevel, path) VALUES (?, ?, ?)`,
@@ -30,6 +31,7 @@ const logger = (req: express.Request, _: any, next: any) => {
   next();
 };
 
+app.set("trust proxy", "::ffff:172.24.0.1");
 // APP USE
 app
   .use(
