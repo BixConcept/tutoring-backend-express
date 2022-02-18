@@ -93,9 +93,9 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`session` (
 CREATE TABLE IF NOT EXISTS `tutoring`.`apiRequest` (
     id INT NOT NULL AUTO_INCREMENT,
     method VARCHAR(10) NOT NULL,
-    authLevel 
-    INT NOT NULL DEFAULT 0,
+    authLevel INT NOT NULL DEFAULT 0,
     path VARCHAR(255) NOT NULL,
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ip VARCHAR(64) NOT NULL,
     PRIMARY KEY (id)
 );

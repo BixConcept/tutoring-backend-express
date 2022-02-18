@@ -19,11 +19,15 @@ const HOST = "https://nachhilfe.3nt3.de/api";
 
 const logger = (req: express.Request, _: any, next: any) => {
   console.log(req.ip);
-  console.log(req.headers["X-Real-IP"]);
   console.log(`${req.method} ${req.path}`);
   db.execute(
-    `INSERT INTO apiRequest (method, authLevel, path) VALUES (?, ?, ?)`,
-    [req.method, req.user === undefined ? 0 : req.user.authLevel, req.path],
+    `INSERT INTO apiRequest (method, authLevel, path, ip) VALUES (?, ?, ?, ?)`,
+    [
+      req.method,
+      req.user === undefined ? 0 : req.user.authLevel,
+      req.path,
+      req.ip,
+    ],
     (err) => {
       if (err) console.error(err);
     }
@@ -694,6 +698,11 @@ app.get("/apiRequests", (req: express.Request, res: express.Response) => {
         return res.status(500).json({ msg: "internal server error" });
       }
       return res.json({ content: results });
+    });
+  } else return res.status(403).json({ msg: "forbidden" });
+});
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT} 🐹🐹`));
     });
   } else return res.status(403).json({ msg: "forbidden" });
 });
