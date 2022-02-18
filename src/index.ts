@@ -703,8 +703,3 @@ app.get("/apiRequests", (req: express.Request, res: express.Response) => {
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT} 🐹🐹`));
-    });
-  } else return res.status(403).json({ msg: "forbidden" });
-});
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT} 🐹🐹`));
