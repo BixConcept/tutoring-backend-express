@@ -4,7 +4,7 @@ import Handlebars from "handlebars";
 import { SentMessageInfo } from "nodemailer/lib/smtp-connection";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
 import { db, emailToName } from ".";
-import { NotificationRequest, Offer, User } from "./models";
+import { Offer, User } from "./models";
 
 export const FRONTEND = "https://nachhilfe.3nt3.de";
 // send a verification email

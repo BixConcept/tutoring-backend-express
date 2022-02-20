@@ -1,9 +1,10 @@
-import { app, db } from "../index";
+import { db } from "../index";
 import express from "express";
 import { AuthLevel, Offer } from "../models";
 
 // list matching offers
-app.post("/find", (req: express.Request, res: express.Response) => {
+// app.post("/find", (req: express.Request, res: express.Response) => {
+export const find = (req: express.Request, res: express.Response) => {
   const subjectId: number = req.body.subjectId;
   const grade: number = req.body.grade;
 
@@ -37,9 +38,10 @@ app.post("/find", (req: express.Request, res: express.Response) => {
     }
     return res.json({ content: results });
   });
-});
+};
 
-app.get("/offers", (req: express.Request, res: express.Response) => {
+// app.get("/offers", (req: express.Request, res: express.Response) => {
+export const getOffers = (req: express.Request, res: express.Response) => {
   if (!req.user) {
     return res.status(401).json({ msg: "unauthorized" });
   }
@@ -57,4 +59,4 @@ app.get("/offers", (req: express.Request, res: express.Response) => {
   } else {
     return res.status(403).json({ msg: "forbidden" });
   }
-});
+};

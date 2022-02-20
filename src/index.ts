@@ -7,6 +7,11 @@ import fs from "fs";
 import nodemailer from "nodemailer";
 import cookieParser from "cookie-parser";
 import { getUser } from "./auth";
+import * as stats from "./routes/stats";
+import * as user from "./routes/user";
+import * as offer from "./routes/offer";
+import * as request from "./routes/request";
+import * as subject from "./routes/subject";
 
 export const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -74,6 +79,18 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
+// converts something like 'christian.lindner@fdphaan.de' to Christian Lindner
+export const emailToName = (email: string): string => {
+  return email
+    .split("@")[0]
+    .split(".")
+    .map((x) => capitalizeWord(x))
+    .join(" ");
+};
+
+const capitalizeWord = (x: string): string => {
+  return x.charAt(0).toUpperCase() + x.slice(1);
+};
 // this reads the file which contains seperate sql statements seperated by a single empty line and executes them seperately.
 fs.readFile(
   "./src/init.sql",
@@ -97,15 +114,32 @@ fs.readFile(
   }
 );
 
-// routes
+/* ROUTES */
 app.get("/", (_: express.Request, res: express.Response) => {
-  res.json([
-    "/find",
-    "/user/register",
-    "/user/verify",
-    "/user/otp",
-    "/subjects",
-  ]);
+  res.send("<h1>Tutoring REST API</h1>");
 });
+
+// stats
+app.get("/apiRequests", stats.getApiRequests);
+app.get("/stats", stats.getStats);
+
+// user
+app.get("/user", user.getUser);
+app.get("/users", user.getUsers);
+app.post("/user/register", user.register);
+app.get("/user/verify", user.verify);
+app.post("/user/otp", user.otp);
+app.delete("/user", user.deleteUser);
+
+// offer
+app.post("/find", offer.find);
+app.get("/offers", offer.getOffers);
+
+// request
+app.post("/request", request.postRequest);
+app.get("/requests", request.getRequests);
+
+// subject
+app.get("/subjects", subject.getSubjects);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT} 🐹🐹`));

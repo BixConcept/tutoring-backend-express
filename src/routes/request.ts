@@ -2,7 +2,8 @@ import { app, db } from "../index";
 import express from "express";
 import { AuthLevel } from "../models";
 
-app.post("/request", (req: express.Request, res: express.Response) => {
+// app.post("/request", (req: express.Request, res: express.Response) => {
+export const postRequest = (req: express.Request, res: express.Response) => {
   const grade: number | undefined = req.body.grade;
   const email: string | undefined = req.body.email;
   const subjectId: number | undefined = req.body.subject;
@@ -50,9 +51,10 @@ app.post("/request", (req: express.Request, res: express.Response) => {
       );
     }
   );
-});
+};
 
-app.get("/requests", (req: express.Request, res: express.Response) => {
+// app.get("/requests", (req: express.Request, res: express.Response) => {
+export const getRequests = (req: express.Request, res: express.Response) => {
   if (!req.user) {
     return res.status(401).json({ msg: "unauthorized" });
   }
@@ -70,4 +72,4 @@ app.get("/requests", (req: express.Request, res: express.Response) => {
   } else {
     return res.status(403).json({ msg: "forbidden" });
   }
-});
+};
