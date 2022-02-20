@@ -125,6 +125,7 @@ app.get("/stats", stats.getStats);
 
 // user
 app.get("/user", user.getUser);
+app.put("/user", user.putUser);
 app.get("/users", user.getUsers);
 app.post("/user/register", user.register);
 app.get("/user/verify", user.verify);
