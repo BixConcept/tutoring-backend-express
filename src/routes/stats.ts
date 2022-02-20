@@ -22,10 +22,10 @@ export const getApiRequests = (req: express.Request, res: express.Response) => {
 export const getStats = (req: express.Request, res: express.Response) => {
   db.query(
     `SELECT
-             (COUNT(*) FROM user) AS users,
-             (COUNT(*) FROM apiRequest) AS apiRequests,
-             (COUNT(*) FROM request) AS requests,
-             (COUNT(*) FROM offer) AS offers`,
+             (SELECT COUNT(*) FROM user) AS users,
+             (SELECT COUNT(*) FROM apiRequest) AS apiRequests,
+             (SELECT COUNT(*) FROM request) AS requests,
+             (SELECT COUNT(*) FROM offer) AS offers`,
     [],
     (err: any, results: any[]) => {
       if (err) {
