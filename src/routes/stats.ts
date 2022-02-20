@@ -32,7 +32,7 @@ export const getStats = (req: express.Request, res: express.Response) => {
         console.error(err);
         return res.status(500).json({ msg: "internal server error" });
       }
-      return res.json({ content: results });
+      return res.json({ content: results[0] });
     }
   );
 };
