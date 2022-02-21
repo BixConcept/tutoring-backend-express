@@ -27,10 +27,10 @@ const logger = (req: express.Request, _: any, next: any) => {
   db.execute(
     `INSERT INTO apiRequest (method, authLevel, path, ip) VALUES (?, ?, ?, ?)`,
     [
-      req.method,
+      req.method || "",
       req.user === undefined ? 0 : req.user.authLevel,
-      req.path,
-      req.ip,
+      req.path || "",
+      req.ip || "",
     ],
     (err) => {
       if (err) console.error(err, err.stack);
