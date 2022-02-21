@@ -34,7 +34,7 @@ export const find = (req: express.Request, res: express.Response) => {
   db.query(query, [subjectId, grade], (err: any, results: any) => {
     if (err) {
       console.error(err);
-      return res.json({ msg: "internal server error" }).status(500);
+      return res.status(500).json({ msg: "internal server error" });
     }
     return res.json({ content: results });
   });
@@ -58,5 +58,61 @@ export const getOffers = (req: express.Request, res: express.Response) => {
     );
   } else {
     return res.status(403).json({ msg: "forbidden" });
+  }
+};
+
+export const createOffer = (req: express.Request, res: express.Response) => {
+  if (req.user === undefined) {
+    return res.status(401).json({ msg: "unauthorized" });
+  } else {
+    let subjectId: number = req.body.subjectId;
+    let maxGrade: number = req.body.maxGrade;
+
+    if (maxGrade < 5 || maxGrade > 13) {
+      return res.status(400).json({
+        msg: "Grade out of bounds",
+      });
+    }
+
+    db.query(
+      "SELECT COUNT(1) FROM subject WHERE id = ?",
+      [subjectId],
+      (err: any, results: any[]) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ msg: "internal server error" });
+        }
+
+        if (results.length === 0) {
+          return res.status(400).json({ msg: "invalid subject" });
+        }
+
+        db.query(
+          `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();`,
+          [req.user?.id, subjectId, maxGrade],
+          (err: any, results: any[]) => {
+            if (err) {
+              console.error(err);
+              return res.status(500).json({ msg: "internal server error" });
+            }
+
+            let offerId = results[0].insertId;
+
+            db.query(
+              `SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE subject.id = offer.subjectId AND offer.id = ?`,
+              [offerId],
+              (err: any, results: any[]) => {
+                if (err) {
+                  console.error(err);
+                  return res.status(500).json({ msg: "internal server error" });
+                }
+
+                return res.json({ content: results[0] });
+              }
+            );
+          }
+        );
+      }
+    );
   }
 };

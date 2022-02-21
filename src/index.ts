@@ -140,6 +140,7 @@ app.delete("/user", user.deleteUser);
 // offer
 app.post("/find", offer.find);
 app.get("/offers", offer.getOffers);
+app.post("/offer", offer.createOffer);
 
 // request
 app.post("/request", request.postRequest);
