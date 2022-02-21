@@ -40,7 +40,6 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
             }
 
             req.user.offers = values;
-            console.log("asdf");
             next();
           }
         );
