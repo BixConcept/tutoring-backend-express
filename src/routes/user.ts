@@ -242,7 +242,7 @@ export const otp = (req: express.Request, res: express.Response) => {
 };
 
 // app.delete("/user", (req: express.Request, res: express.Response) => {
-export const deleteUser = (req: express.Request, res: express.Response) => {
+export const deleteMyself = (req: express.Request, res: express.Response) => {
   if (req.user) {
     db.execute("DELETE FROM user WHERE id = ?", [req.user.id], (err) => {
       if (err) {
@@ -257,6 +257,31 @@ export const deleteUser = (req: express.Request, res: express.Response) => {
   } else {
     return res.status(401).json({ msg: "not authenticated" });
   }
+};
+
+export const deleteUser = (req: express.Request, res: express.Response) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: "not authenticated" });
+  }
+  if (req.user.authLevel !== AuthLevel.Admin) {
+    return res.status(403).json({ msg: "forbidden" });
+  }
+
+  let userId = req.params.id;
+  if (!userId) {
+    return res.status(400).json({ msg: "no user id specified" });
+  }
+
+  db.execute("DELETE FROM user WHERE id = ?", [userId], (err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ msg: "internal server error" });
+      return;
+    }
+    db.commit();
+
+    return res.json({ msg: "success" });
+  });
 };
 
 export const getUser = (req: express.Request, res: express.Response) => {

@@ -135,7 +135,8 @@ app.get("/users", user.getUsers);
 app.post("/user/register", user.register);
 app.get("/user/verify", user.verify);
 app.post("/user/otp", user.otp);
-app.delete("/user", user.deleteUser);
+app.delete("/user", user.deleteMyself);
+app.delete("/user/:id", user.deleteUser);
 
 // offer
 app.post("/find", offer.find);
