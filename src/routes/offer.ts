@@ -27,7 +27,7 @@ export const find = (req: express.Request, res: express.Response) => {
     WHERE
         offer.subjectId = ?
         AND offer.maxGrade >= ?
-        AND user.auth >= 1`;
+        AND user.authLevel >= 1`;
 
   // TODO: return as seperate objects (instead of user_id -> user: {id:})
 

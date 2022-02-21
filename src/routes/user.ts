@@ -135,7 +135,7 @@ export const verify = (req: express.Request, res: express.Response) => {
         return res.status(401).json({ msg: "invalid code" });
       }
 
-      // update the user record and set user.auth = 1
+      // update the user record and set user.authLevel = 1
       const sqlCommand = `UPDATE user, verificationToken SET user.authLevel = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ? AND user.authLevel = 0; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
       db.query(sqlCommand, [code, code], (err: Error | null, values: any) => {
         // I hope this checks for everything
@@ -331,7 +331,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
     console.log(updated);
 
     db.query(
-      "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, auth = ?, misc = ? WHERE id = ?",
+      "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, authLevel = ?, misc = ? WHERE id = ?",
       [
         updated.id,
         updated.email,

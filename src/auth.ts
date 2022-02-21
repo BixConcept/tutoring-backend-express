@@ -6,12 +6,6 @@ import { Offer, User } from "./models";
 export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
   const statement = `SELECT user.* FROM user, session WHERE user.id = session.userId AND session.token = ?`;
 
-  /* 
-  | user                                                                                                                   || offer                                           |
-  |------------------------------------------------------------------------------------------------------------------------||-------------------------------------------------|
-  | user_id | email | name | phone_number | grade | misc | password_hash | auth | created_at | updated_at | last_activity  || id | user_id | subject_id | max_grade | created_at | 
-  */
-
   db.query(
     statement,
     [req.cookies["session-keks"]],
