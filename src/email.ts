@@ -13,7 +13,7 @@ export async function sendVerificationEmail(
   code: string,
   email: string
 ) {
-  fs.readFile("./src/verification_email.html", (err, data) => {
+  fs.readFile("./src/emails/verification_email.html", (err, data) => {
     if (err) return console.error(err);
     const template = Handlebars.compile(data.toString().replace("\n", ""));
 
@@ -42,7 +42,7 @@ export async function sendOTPEmail(
   code: string,
   email: string
 ) {
-  fs.readFile("./src/otp_email.html", (err, data) => {
+  fs.readFile("./src/emails/otp_email.html", (err, data) => {
     if (err) return console.error(err);
     const template = Handlebars.compile(data.toString().replace("\n", ""));
 
@@ -81,7 +81,7 @@ export async function notifyPeople(
         return;
       }
 
-      fs.readFile("./src/notification_email.html", (err, data) => {
+      fs.readFile("./src/emails/notification_email.html", (err, data) => {
         if (err) {
           console.error(err);
           return;

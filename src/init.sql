@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     `grade` INT NOT NULL,
     `misc` TEXT NULL,
     `passwordHash` VARCHAR(128) NULL,
-    `auth` INT NOT NULL,
+    `authLevel` INT NOT NULL,
     `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updatedAt` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (`id`),

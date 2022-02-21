@@ -19,7 +19,11 @@ dotenv.config();
 const HOST = "https://nachhilfe.3nt3.de/api";
 
 const logger = (req: express.Request, _: any, next: any) => {
-  console.log(`${req.method} ${req.path}`);
+  console.log(
+    `${req.method} ${req.path} ${
+      req.user === undefined ? 0 : req.user.authLevel
+    } ${req.ip}`
+  );
   db.execute(
     `INSERT INTO apiRequest (method, authLevel, path, ip) VALUES (?, ?, ?, ?)`,
     [
@@ -29,7 +33,8 @@ const logger = (req: express.Request, _: any, next: any) => {
       req.ip,
     ],
     (err) => {
-      if (err) console.error(err);
+      if (err) console.error(err, err.stack);
+      db.commit();
     }
   );
   next();

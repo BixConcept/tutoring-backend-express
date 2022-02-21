@@ -46,6 +46,7 @@ export const postRequest = (req: express.Request, res: express.Response) => {
             return res.status(500).json({ msg: "internal server error" });
           }
 
+          db.commit();
           return res.json({ msg: "successful" });
         }
       );

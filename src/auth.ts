@@ -24,7 +24,8 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
       }
 
       if (values && values.length > 0) {
-        req.user = dbResultToUser(values[0]);
+        req.user = values[0];
+        delete req.user.passwordHash;
         req.isAuthenticated = true;
 
         db.query(
@@ -39,12 +40,13 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
           [values[0].id],
           (err: QueryError | null, values: any) => {
             if (err) {
-              console.error(err);
+              console.error("auth/getUser: ", err);
               next();
               return;
             }
 
             req.user.offers = values;
+            console.log("asdf");
             next();
           }
         );
@@ -55,22 +57,6 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
       }
     }
   );
-};
-
-// converts the result returned from the database to a User object
-// necessary because the column names differ from the fields in User
-export const dbResultToUser = (r: any): User => {
-  return {
-    id: r.id,
-    name: r.name,
-    email: r.email,
-    phoneNumber: r.phone_number,
-    authLevel: r.auth,
-    grade: r.grade,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-    offers: [], // this is overwritten later since the offers are queried seperately
-  };
 };
 
 export const addSession = (token: string, userID: number): void => {

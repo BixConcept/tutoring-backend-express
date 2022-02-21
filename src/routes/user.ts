@@ -1,7 +1,7 @@
 import { app, db, emailToName, transporter } from "../index";
 import express from "express";
 import crypto from "crypto";
-import { addSession, dbResultToUser } from "../auth";
+import { addSession } from "../auth";
 import { AuthLevel, User } from "../models";
 import { sendOTPEmail, sendVerificationEmail, notifyPeople } from "../email";
 import mysql from "mysql2";
@@ -70,7 +70,7 @@ export const register = (req: express.Request, res: express.Response) => {
         .json({ msg: `some of the given subject ids are invalid` });
     }
 
-    const sqlCommand: string = `INSERT INTO user (email, name, auth, updatedAt, misc, grade, phoneNumber) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?); SELECT LAST_INSERT_ID();`;
+    const sqlCommand: string = `INSERT INTO user (email, name, authLevel, updatedAt, misc, grade, phoneNumber) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?); SELECT LAST_INSERT_ID();`;
     db.query(
       sqlCommand,
       [email, emailToName(email), misc, grade, phoneNumber],
@@ -106,6 +106,7 @@ export const register = (req: express.Request, res: express.Response) => {
           "INSERT INTO verificationToken (token, userId) VALUES (?, ?)",
           [code, id]
         );
+        db.commit();
 
         sendVerificationEmail(transporter, code, email);
 
@@ -135,7 +136,7 @@ export const verify = (req: express.Request, res: express.Response) => {
       }
 
       // update the user record and set user.auth = 1
-      const sqlCommand = `UPDATE user, verificationToken SET user.auth = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ? AND user.auth = 0; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
+      const sqlCommand = `UPDATE user, verificationToken SET user.authLevel = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ? AND user.authLevel = 0; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
       db.query(sqlCommand, [code, code], (err: Error | null, values: any) => {
         // I hope this checks for everything
         if (err) return res.status(401).json({ msg: "invalid code" });
@@ -230,6 +231,7 @@ export const otp = (req: express.Request, res: express.Response) => {
             res.status(500).json({ msg: "internal server error" });
             return;
           }
+          db.commit();
         }
       );
 
@@ -318,7 +320,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
               });
             }
 
-            oldUser = dbResultToUser(result[0]);
+            oldUser = result[0];
           }
         );
       }
@@ -326,6 +328,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
 
     // this merges the things
     let updated = { ...oldUser, ...changes };
+    console.log(updated);
 
     db.query(
       "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, auth = ?, misc = ? WHERE id = ?",
@@ -369,6 +372,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
                 if (error) {
                   console.error(error);
                 }
+                db.commit();
               }
             );
           });
