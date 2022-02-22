@@ -311,9 +311,12 @@ export const putUser = (req: express.Request, res: express.Response) => {
       // list of attributes the user tried to change but isn't allowed to
       let errors: string[] = [];
 
-      Object.keys(changes).forEach((change) => {
+      Object.keys(changes).forEach((change: string) => {
         // if the proposed change is inside the list of unchangeables
-        if (unchangeables.indexOf(change) > -1) {
+        if (
+          unchangeables.indexOf(change) > -1 &&
+          changes[change] !== (req.user as any)[change] // check if it is still the same
+        ) {
           errors.push(change);
         }
       });
