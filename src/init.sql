@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
+    `schoolEmail` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
     `phoneNumber` VARCHAR(20) NULL,
     `grade` INT NOT NULL,
