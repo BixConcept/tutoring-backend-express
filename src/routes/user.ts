@@ -10,6 +10,15 @@ const checkEmailValidity = (email: string): boolean => {
   return /(.*)\.(.*)@gymhaan.de/.test(email);
 };
 
+const checkIfEmailIsUsed = (email: string): boolean => {
+  let valid: boolean = false;
+  db.query("SELECT * FROM user WHERE schoolEmail = ?", [email], (err: mysql.QueryError | null, result: any) => {
+    if (err) console.error(err);
+    if (result.length === 0) valid = true;
+  })
+  return valid;
+}
+
 // generate random 32 chars string
 const generateCode = (n: number = 32): string => {
   return crypto.randomBytes(n).toString("hex").slice(0, n);
@@ -34,7 +43,7 @@ export const register = (req: express.Request, res: express.Response) => {
   }
 
   // hackery because frontend
-  if (!checkEmailValidity(email) && !checkEmailValidity(email + "@gymhaan.de"))
+  if (!checkEmailValidity(email) && !checkEmailValidity(email + "@gymhaan.de") && checkIfEmailIsUsed(email))
     return res.status(400).json({ msg: "invalid email" });
 
   // check if grade is valid
@@ -70,10 +79,10 @@ export const register = (req: express.Request, res: express.Response) => {
         .json({ msg: `some of the given subject ids are invalid` });
     }
 
-    const sqlCommand: string = `INSERT INTO user (email, name, authLevel, updatedAt, misc, grade, phoneNumber) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?); SELECT LAST_INSERT_ID();`;
+    const sqlCommand: string = `INSERT INTO user (email, schoolEmail, name, authLevel, updatedAt, misc, grade, phoneNumber) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?); SELECT LAST_INSERT_ID();`;
     db.query(
       sqlCommand,
-      [email, emailToName(email), misc, grade, phoneNumber],
+      [email, email, emailToName(email), misc, grade, phoneNumber],
       (err: mysql.QueryError | null, results: any) => {
         if (err) {
           if (err.code == "ER_DUP_ENTRY") {
