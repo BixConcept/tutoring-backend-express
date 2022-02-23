@@ -1,12 +1,12 @@
 import { NextFunction } from "express";
 import { QueryError } from "mysql2";
-import { db } from ".";
+import { pool } from ".";
 import { Offer, User } from "./models";
 
 export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
   const statement = `SELECT user.* FROM user, session WHERE user.id = session.userId AND session.token = ?`;
 
-  db.query(
+  pool.query(
     statement,
     [req.cookies["session-keks"]],
     (err: QueryError | null, values: any) => {
@@ -22,7 +22,7 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
         delete req.user.passwordHash;
         req.isAuthenticated = true;
 
-        db.query(
+        pool.query(
           `SELECT
              offer.id AS id,
              offer.userId AS userId,
@@ -54,8 +54,8 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
 
 export const addSession = (token: string, userID: number): void => {
   const statement = "INSERT INTO session (token, userId) VALUES (?, ?)";
-  db.execute(statement, [token, userID], (err) => {
+  pool.execute(statement, [token, userID], (err) => {
     console.error(err);
   });
-  db.commit();
+  pool.commit();
 };

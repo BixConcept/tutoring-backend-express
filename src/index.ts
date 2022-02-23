@@ -24,7 +24,7 @@ const logger = (req: express.Request, _: any, next: any) => {
       req.user === undefined ? 0 : req.user.authLevel
     } ${req.ip}`
   );
-  db.execute(
+  pool.execute(
     `INSERT INTO apiRequest (method, authLevel, path, ip) VALUES (?, ?, ?, ?)`,
     [
       req.method || "",
@@ -34,7 +34,7 @@ const logger = (req: express.Request, _: any, next: any) => {
     ],
     (err) => {
       if (err) console.error(err, err.stack);
-      db.commit();
+      pool.commit();
     }
   );
   next();
@@ -59,7 +59,7 @@ app
   .use(bodyParser.urlencoded({ extended: true }));
 
 // create connection
-export const db = mysql.createConnection({
+export const pool = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -68,7 +68,7 @@ export const db = mysql.createConnection({
 });
 
 // connect
-db.connect((err: mysql.QueryError | null) => {
+pool.connect((err: mysql.QueryError | null) => {
   if (err) console.log(err);
   else console.log("Connected to database!");
 });
@@ -105,7 +105,7 @@ fs.readFile(
       .toString()
       .split(";")
       .forEach((command) =>
-        db.execute(command, (err) => {
+        pool.execute(command, (err) => {
           // if there is an error that is relevant
           if (
             err &&

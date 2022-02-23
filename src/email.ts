@@ -3,7 +3,7 @@ import Mail from "nodemailer/lib/mailer";
 import Handlebars from "handlebars";
 import { SentMessageInfo } from "nodemailer/lib/smtp-connection";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
-import { db, emailToName } from ".";
+import { pool, emailToName } from ".";
 import { Offer, User } from "./models";
 
 export const FRONTEND = "https://nachhilfe.3nt3.de";
@@ -72,7 +72,7 @@ export async function notifyPeople(
   offer: Offer,
   tutor: User
 ) {
-  db.query(
+  pool.query(
     "SELECT * FROM request WHERE subjectId = ? AND grade <= ?",
     [offer.subjectId, offer.maxGrade],
     (err: any, results: any[]) => {
@@ -109,7 +109,7 @@ export async function notifyPeople(
             }
           );
 
-          db.execute("DELETE FROM request WHERE id = ?", [request.id]);
+          pool.execute("DELETE FROM request WHERE id = ?", [request.id]);
         });
       });
     }

@@ -1,4 +1,4 @@
-import { app, db, emailToName, transporter } from "../index";
+import { app, pool, emailToName, transporter } from "../index";
 import express from "express";
 import crypto from "crypto";
 import { addSession } from "../auth";
@@ -57,7 +57,7 @@ export const register = (req: express.Request, res: express.Response) => {
     ","
   )});`;
 
-  db.query(query, (err: any, subjects: any) => {
+  pool.query(query, (err: any, subjects: any) => {
     if (err) {
       console.error(`error querying database for subject with id: ${err}`);
       return res.status(500).json({ msg: "internal server error" });
@@ -71,7 +71,7 @@ export const register = (req: express.Request, res: express.Response) => {
     }
 
     const sqlCommand: string = `INSERT INTO user (email, name, authLevel, updatedAt, misc, grade, phoneNumber) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?); SELECT LAST_INSERT_ID();`;
-    db.query(
+    pool.query(
       sqlCommand,
       [email, emailToName(email), misc, grade, phoneNumber],
       (err: mysql.QueryError | null, results: any) => {
@@ -90,7 +90,7 @@ export const register = (req: express.Request, res: express.Response) => {
         // add offer for each selected subject
         Object.keys(subjects).forEach((key: any) => {
           const stmt: string = `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?)`;
-          db.execute(
+          pool.execute(
             stmt,
             [id, key, subjects[key].id],
             (error: mysql.QueryError | null) => {
@@ -102,11 +102,11 @@ export const register = (req: express.Request, res: express.Response) => {
         });
 
         let code: string = generateCode(32);
-        db.query(
+        pool.query(
           "INSERT INTO verificationToken (token, userId) VALUES (?, ?)",
           [code, id]
         );
-        db.commit();
+        pool.commit();
 
         sendVerificationEmail(transporter, code, email);
 
@@ -125,7 +125,7 @@ export const verify = (req: express.Request, res: express.Response) => {
   }
 
   // check if there are any codes that match the one given
-  db.query(
+  pool.query(
     "SELECT COUNT(1) FROM verificationToken WHERE verificationToken.token = ?;",
     [code],
     (err: any, results: any) => {
@@ -137,21 +137,21 @@ export const verify = (req: express.Request, res: express.Response) => {
 
       // update the user record and set user.authLevel = 1
       const sqlCommand = `UPDATE user, verificationToken SET user.authLevel = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ? AND user.authLevel = 0; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
-      db.query(sqlCommand, [code, code], (err: Error | null, values: any) => {
+      pool.query(sqlCommand, [code, code], (err: Error | null, values: any) => {
         // I hope this checks for everything
         if (err) return res.status(401).json({ msg: "invalid code" });
 
         // delete the verification code
         // this is not critical, so we don't check for errors
         // the only consequence this could have is spamming the database
-        db.execute(
+        pool.execute(
           "DELETE FROM verificationToken WHERE verificationToken.token = ?",
           [code]
         );
 
         const userId: number = values[1][0].id;
 
-        db.query(
+        pool.query(
           "SELECT * FROM user WHERE id = ?",
           [userId],
           (err: any, users: any[]) => {
@@ -160,7 +160,7 @@ export const verify = (req: express.Request, res: express.Response) => {
               return;
             }
 
-            db.query(
+            pool.query(
               "SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE userId = ? AND subject.id = offer.subjectId",
               [userId],
               (err: any, offers: any[]) => {
@@ -203,7 +203,7 @@ export const otp = (req: express.Request, res: express.Response) => {
     return;
   }
 
-  db.query(
+  pool.query(
     "SELECT * FROM user WHERE email = ?",
     [email],
     async (err: any, results: any) => {
@@ -223,7 +223,7 @@ export const otp = (req: express.Request, res: express.Response) => {
       const email: string = results[0].email;
 
       let code = generateCode(32);
-      db.execute(
+      pool.execute(
         "INSERT INTO verificationToken (token, userId) VALUES (?, ?)",
         [code, results[0].id],
         (err) => {
@@ -231,7 +231,7 @@ export const otp = (req: express.Request, res: express.Response) => {
             res.status(500).json({ msg: "internal server error" });
             return;
           }
-          db.commit();
+          pool.commit();
         }
       );
 
@@ -244,13 +244,13 @@ export const otp = (req: express.Request, res: express.Response) => {
 // app.delete("/user", (req: express.Request, res: express.Response) => {
 export const deleteMyself = (req: express.Request, res: express.Response) => {
   if (req.user) {
-    db.execute("DELETE FROM user WHERE id = ?", [req.user.id], (err) => {
+    pool.execute("DELETE FROM user WHERE id = ?", [req.user.id], (err) => {
       if (err) {
         console.error(err);
         res.status(500).json({ msg: "internal server error" });
         return;
       }
-      db.commit();
+      pool.commit();
 
       return res.json({ msg: "success" });
     });
@@ -272,13 +272,13 @@ export const deleteUser = (req: express.Request, res: express.Response) => {
     return res.status(400).json({ msg: "no user id specified" });
   }
 
-  db.execute("DELETE FROM user WHERE id = ?", [userId], (err) => {
+  pool.execute("DELETE FROM user WHERE id = ?", [userId], (err) => {
     if (err) {
       console.error(err);
       res.status(500).json({ msg: "internal server error" });
       return;
     }
-    db.commit();
+    pool.commit();
 
     return res.json({ msg: "success" });
   });
@@ -330,7 +330,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
     } else {
       const { id } = req.params;
       if (id) {
-        db.query(
+        pool.query(
           "SELECT * FROM user WHERE id = ?",
           [id],
           (err: mysql.QueryError | null, result: any) => {
@@ -358,7 +358,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
     let updated = { ...oldUser, ...changes };
     console.log(updated);
 
-    db.query(
+    pool.query(
       "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, authLevel = ?, misc = ? WHERE id = ?",
       [
         updated.id,
@@ -378,12 +378,12 @@ export const putUser = (req: express.Request, res: express.Response) => {
       }
     );
 
-    db.commit();
+    pool.commit();
 
     if (changes.subjects) {
       // first delete everything, then insert new ones
       // this is not the correctest way to do this, but it is a whole lot more performant than doing something with O(n^3)
-      db.execute(
+      pool.execute(
         `DELETE FROM offer WHERE userId = ?`,
         [req.user.id],
         (err: any | null) => {
@@ -393,14 +393,14 @@ export const putUser = (req: express.Request, res: express.Response) => {
           }
 
           Object.keys(changes.subjects).forEach((subject: string) => {
-            db.execute(
+            pool.execute(
               `INSERT INTO offer (subject, maxGrade, userId) VALUES (?, ?, ?)`,
               [subject, changes.subjects[subject], req.user?.id],
               (error: mysql.QueryError | null) => {
                 if (error) {
                   console.error(error);
                 }
-                db.commit();
+                pool.commit();
               }
             );
           });
@@ -416,13 +416,13 @@ export const putUser = (req: express.Request, res: express.Response) => {
 export const logout = (req: express.Request, res: express.Response) => {
   const cookie = req.cookies["session-keks"];
   if (cookie) {
-    db.execute("DELETE FROM session WHERE token = ?", [cookie], (err) => {
+    pool.execute("DELETE FROM session WHERE token = ?", [cookie], (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ msg: "internal server error" });
       }
     });
-    db.commit();
+    pool.commit();
 
     res.clearCookie("session-keks").json({ msg: "logged out" });
   }
@@ -434,7 +434,7 @@ export const getUsers = (req: express.Request, res: express.Response) => {
     return res.status(401).json({ msg: "unauthorized" });
   }
   if (req.user.authLevel === AuthLevel.Admin) {
-    db.query("SELECT * FROM user", (err: any, results: User[]) => {
+    pool.query("SELECT * FROM user", (err: any, results: User[]) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ msg: "internal server error" });
