@@ -23,6 +23,11 @@ export const register = (req: express.Request, res: express.Response) => {
   const grade: number = req.body.grade;
   const phoneNumber: string = req.body.phoneNumber;
 
+  const hasSignal: boolean = req.body.hasSignal || false;
+  const hasWhatsapp: boolean = req.body.hasWhatsapp || false;
+  const hasDiscord: boolean = req.body.hasDiscord || false;
+  const discordUser: string | null = req.body.discordUser || null;
+
   let subjects: { [key: number]: number } = {};
   // converts string grades to numbers
   try {
@@ -57,23 +62,33 @@ export const register = (req: express.Request, res: express.Response) => {
     ","
   )});`;
 
-  pool.query(query, (err: any, subjects: any) => {
+  pool.query(query, (err: any, dbSubjects: any) => {
     if (err) {
       console.error(`error querying database for subject with id: ${err}`);
       return res.status(500).json({ msg: "internal server error" });
     }
 
     // return error if the id is invalid
-    if (subjects.length < givenIds.length) {
+    if (dbSubjects.length < givenIds.length) {
       return res
         .status(400)
         .json({ msg: `some of the given subject ids are invalid` });
     }
 
-    const sqlCommand: string = `INSERT INTO user (email, name, authLevel, updatedAt, misc, grade, phoneNumber) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?); SELECT LAST_INSERT_ID();`;
+    const sqlCommand: string = `INSERT INTO user (email, name, authLevel, updatedAt, misc, grade, phoneNumber, hasSignal, hasWhatsapp, hasDiscord, discordUser) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?); SELECT LAST_INSERT_ID();`;
     pool.query(
       sqlCommand,
-      [email, emailToName(email), misc, grade, phoneNumber],
+      [
+        email,
+        emailToName(email),
+        misc,
+        grade,
+        phoneNumber,
+        hasSignal,
+        hasWhatsapp,
+        hasDiscord,
+        discordUser,
+      ],
       (err: mysql.QueryError | null, results: any) => {
         if (err) {
           if (err.code == "ER_DUP_ENTRY") {
@@ -89,10 +104,9 @@ export const register = (req: express.Request, res: express.Response) => {
 
         // add offer for each selected subject
         Object.keys(subjects).forEach((key: any) => {
-          const stmt: string = `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?)`;
-          pool.execute(
-            stmt,
-            [id, key, subjects[key].id],
+          pool.query(
+            `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?)`,
+            [id, parseInt(key), subjects[key]],
             (error: mysql.QueryError | null) => {
               if (error) {
                 console.error(error);
@@ -359,7 +373,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
     console.log(updated);
 
     pool.query(
-      "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, authLevel = ?, misc = ? WHERE id = ?",
+      "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, authLevel = ?, misc = ?, hasSignal = ?, hasWhatsapp = ?, hasDiscord = ?, discordUser = ?, WHERE id = ?",
       [
         updated.id,
         updated.email,
@@ -369,6 +383,10 @@ export const putUser = (req: express.Request, res: express.Response) => {
         updated.authLevel,
         updated.misc === undefined ? null : updated.misc,
         req.user.id,
+        updated.hasSignal,
+        updated.hasWhatsapp,
+        updated.hasDiscord,
+        updated.discordUser,
       ],
       (err) => {
         if (err) {
