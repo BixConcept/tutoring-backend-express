@@ -19,7 +19,11 @@ export const find = (req: express.Request, res: express.Response) => {
         user.grade AS grade,
         offer.subjectId AS subjectId,
         subject.name AS subjectName,
-        user.misc
+        user.misc,
+        user.hasSignal,
+        user.hasWhatsapp,
+        user.hasDiscord,
+        user.discordUser
     FROM
         offer 
     INNER JOIN user ON offer.userId = user.id
