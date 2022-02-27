@@ -40,6 +40,33 @@ const logger = (req: express.Request, _: any, next: any) => {
   next();
 };
 
+const reconnectDatabase = (req: express.Request, _: any, next: any) => {
+  pool.query("SELECT 1", (err: mysql.QueryError | null) => {
+    if (err) {
+      pool = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+        multipleStatements: true,
+        typeCast: (field, useDefaultTypeCasting) => {
+          // We only want to cast tinyint fields that have a single-bit in them. If the field
+          // has more than one bit, then we cannot assume it is supposed to be a Boolean.
+          if (field.type === "TINY" && field.length === 1) {
+            return field.string() === "1";
+          }
+
+          return useDefaultTypeCasting();
+        },
+      });
+      next();
+      return;
+    }
+    next();
+    return;
+  });
+};
+
 app.set("trust proxy", "::ffff:172.24.0.1");
 // APP USE
 app
@@ -53,13 +80,14 @@ app
     })
   )
   .use(cookieParser())
+  .use(reconnectDatabase)
   .use(getUser)
   .use(logger)
   .use(bodyParser.json())
   .use(bodyParser.urlencoded({ extended: true }));
 
 // create connection
-export const pool = mysql.createConnection({
+export let pool = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
