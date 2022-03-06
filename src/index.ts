@@ -1,17 +1,18 @@
-import express from "express";
-import mysql from "mysql2";
+import bodyParser from "body-parser";
+import compression from "compression";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import bodyParser from "body-parser";
+import express from "express";
 import fs from "fs";
+import mysql from "mysql2";
 import nodemailer from "nodemailer";
-import cookieParser from "cookie-parser";
 import { getUser } from "./auth";
-import * as stats from "./routes/stats";
-import * as user from "./routes/user";
 import * as offer from "./routes/offer";
 import * as request from "./routes/request";
+import * as stats from "./routes/stats";
 import * as subject from "./routes/subject";
+import * as user from "./routes/user";
 
 export const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -59,6 +60,7 @@ const reconnectDatabase = (req: express.Request, _: any, next: any) => {
           return useDefaultTypeCasting();
         },
       });
+      console.log("--- RESTARTED DB CONNECTION ---");
       next();
       return;
     }
@@ -80,6 +82,7 @@ app
     })
   )
   .use(cookieParser())
+  .use(compression())
   .use(reconnectDatabase)
   .use(getUser)
   .use(logger)
