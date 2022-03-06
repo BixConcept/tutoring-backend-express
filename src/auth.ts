@@ -57,7 +57,7 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
   );
 };
 
-const getOffers = (userID: number): Promise<Offer[]> => {
+export const getOffers = (userID: number): Promise<Offer[]> => {
   return new Promise((resolve, reject) => {
     pool.query(
       `SELECT

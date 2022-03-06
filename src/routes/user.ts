@@ -5,6 +5,7 @@ import { addSession } from "../auth";
 import { AuthLevel, User } from "../models";
 import { sendOTPEmail, sendVerificationEmail, notifyPeople } from "../email";
 import mysql from "mysql2";
+import { getOffers } from "../auth";
 
 const checkEmailValidity = (email: string): boolean => {
   return /(.*)\.(.*)@gymhaan.de/.test(email);
@@ -472,7 +473,7 @@ export const getUserById = (req: express.Request, res: express.Response) => {
   pool.query(
     "SELECT * FROM user where id = ?",
     [id],
-    (err: any, result: any) => {
+    async (err: any, result: any) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ msg: "internal server error" });
@@ -483,7 +484,10 @@ export const getUserById = (req: express.Request, res: express.Response) => {
           .json({ msg: `user with id ${id} does not exist` });
       }
       delete result.passwordHash;
-      return res.json({ content: result });
+
+      result[0].offers = await getOffers(id);
+
+      return res.json({ content: result[0] });
     }
   );
 };
