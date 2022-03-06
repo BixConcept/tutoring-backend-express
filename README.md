@@ -21,12 +21,28 @@ All configuration is done using environment variables. We look for a `.env` file
 | `EMAIL_PASSWORD` | Password for the E-Mail account                                              | `irgendeinpassworthalt`     |          |
 | `FRONTEND_URL`   | Where the frontend is hosted (for links to click on)                         | `https://nachhilfe.3nt3.de` |          |
 
-## BUILDING
+## RUNNING (without docker)
 
-`npm run build`
+After [configuring](#configuration) everything, you can run your server. Check if all [dependencies](#requirements) are running where you specified.
 
-# start
+### BUILDING
 
 ```
-docker-compose --build -d app
+npm run build
+```
+
+will basically just run `tsc` to "compile" TypeScript to regular JavaScript
+
+### ACTUALLY RUNNING IT OMG
+
+```
+node build/index.js
+```
+
+## RUNNING (with docker)
+
+This will start a mysql server, phpmyadmin and build the app
+
+```
+docker-compose up --build -d app
 ```
