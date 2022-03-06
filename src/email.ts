@@ -1,12 +1,11 @@
 import fs from "fs";
-import Mail from "nodemailer/lib/mailer";
 import Handlebars from "handlebars";
 import { SentMessageInfo } from "nodemailer/lib/smtp-connection";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
 import { pool, emailToName } from ".";
 import { Offer, User } from "./models";
 
-export const FRONTEND = "https://nachhilfe.3nt3.de";
+export const FRONTEND = process.env.FRONTEND_URL;
 // send a verification email
 export async function sendVerificationEmail(
   transporter: any,
@@ -18,7 +17,7 @@ export async function sendVerificationEmail(
     const template = Handlebars.compile(data.toString().replace("\n", ""));
 
     const mailOptions: MailOptions = {
-      from: "nachhilfebot@3nt3.de",
+      from: process.env.MAIL_USER,
       to: email,
       subject: "Nachhilfeplattform GymHaan - Account bestätigen",
       html: template({
@@ -47,7 +46,7 @@ export async function sendOTPEmail(
     const template = Handlebars.compile(data.toString().replace("\n", ""));
 
     const mailOptions: MailOptions = {
-      from: "nachhilfebot@3nt3.de",
+      from: process.env.MAIL_USER,
       to: email,
       subject: "Nachhilfeplattform GymHaan - Anmelden",
       html: template({
@@ -91,7 +90,7 @@ export async function notifyPeople(
 
         results.forEach(async (request) => {
           const mailOptions: MailOptions = {
-            from: "nachhilfebot@3nt3.de",
+            from: process.env.MAIL_USER,
             to: request.email,
             subject: "Benachrichting Nachhilfe GymHaan",
             html: template({

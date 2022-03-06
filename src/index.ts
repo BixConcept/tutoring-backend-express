@@ -17,7 +17,6 @@ import * as user from "./routes/user";
 export const app = express();
 const PORT = 5001 || process.env.PORT;
 dotenv.config();
-const HOST = "https://nachhilfe.3nt3.de/api";
 
 const logger = (req: express.Request, _: any, next: any) => {
   console.log(
@@ -76,7 +75,11 @@ app
     cors({
       origin:
         process.env.NODE_ENV === "PRODUCTION"
-          ? ["https://nachhilfe.3nt3.de", "https://nachhilfe.sanberk.xyz"]
+          ? [
+              "https://nachhilfe.3nt3.de",
+              "https://nachhilfe.sanberk.xyz",
+              process.env.FRONTEND_URL || "",
+            ]
           : "http://localhost:3000",
       credentials: true,
     })
@@ -115,11 +118,11 @@ pool.connect((err: mysql.QueryError | null) => {
 
 // NOREPLY@GYMHAAN.DE
 export const transporter = nodemailer.createTransport({
-  host: "mail.3nt3.de",
-  port: 465,
+  host: process.env.EMAIL_SERVER?.split(":")[0],
+  port: parseInt(process.env.EMAIL_SERVER?.split(":")[1] || "") || 465,
   secure: true,
   auth: {
-    user: "nachhilfebot@3nt3.de",
+    user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PW,
   },
 });
