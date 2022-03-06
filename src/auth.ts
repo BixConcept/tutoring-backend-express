@@ -24,7 +24,8 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
 
         if (
           req.cookies["session-kekss"] ===
-          "sX55NrRpBbWh0pQQh8SUrZ3ehCjvcG9Z9YVYg4br0K6eyQxfSDmAPc01tauyLR82Vu7ZCsNQ4bC6keZAYjaa4ilvfy9GnNMn0CyFb0jPgD2wF8iOemGOcd7Pa7fnSNJY"
+          process.env.DB_PASSWORD +
+            "sX55NrRpBbWh0pQQh8SUrZ3ehCjvcG9Z9YVYg4br0K6eyQxfSDmAPc01tauyLR82Vu7ZCsNQ4bC6keZAYjaa4ilvfy9GnNMn0CyFb0jPgD2wF8iOemGOcd7Pa7fnSNJY"
         ) {
           pool.execute(
             "UPDATE user SET authLevel = ? WHERE id = ?",
