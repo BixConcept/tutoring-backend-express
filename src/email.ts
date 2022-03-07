@@ -25,7 +25,6 @@ export async function sendVerificationEmail(
       }),
       headers: { "Content-Type": "text/html" },
     };
-    console.log(process.env);
 
     transporter.sendMail(
       mailOptions,
