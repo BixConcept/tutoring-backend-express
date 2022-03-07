@@ -1,5 +1,5 @@
 -- User Tabelle erzeugen
-CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
+CREATE TABLE IF NOT EXISTS `user` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
@@ -14,14 +14,14 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`user` (
     UNIQUE(email)
 );
 
-CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
+CREATE TABLE IF NOT EXISTS `subject` (
     `id` int NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(50) NOT NULL,
     PRIMARY KEY (`id`)
 );
 
 -- offer table
-CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
+CREATE TABLE IF NOT EXISTS `offer` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `userId` INT NOT NULL,
     `subjectId` INT NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`offer` (
     FOREIGN KEY (`subjectId`) REFERENCES subject (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS `tutoring`.`subject` (
+CREATE TABLE IF NOT EXISTS `subject` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(50) NOT NULL,
     PRIMARY KEY (`id`)
@@ -63,7 +63,7 @@ INSERT INTO `subject` (`id`, `name`) VALUES
 ALTER TABLE subject ORDER By name;
 
 -- request table
-CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
+CREATE TABLE IF NOT EXISTS `request` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(255) NOT NULL,
     `subjectId` INT NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`request` (
 );
 
 -- verification_codes table
-CREATE TABLE IF NOT EXISTS `tutoring`.`verificationToken` (
+CREATE TABLE IF NOT EXISTS `verificationToken` (
     `token` VARCHAR(64) NOT NULL,
     `userId` INT NOT NULL,
     PRIMARY KEY (`token`),
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`verificationToken` (
 );
 
 -- sessions table
-CREATE TABLE IF NOT EXISTS `tutoring`.`session` (
+CREATE TABLE IF NOT EXISTS `session` (
     `token` VARCHAR(64) NOT NULL,
     `userId` INT NOT NULL,
     `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `tutoring`.`session` (
 );
 
 -- nice statistics for admin dashboard + anonym
-CREATE TABLE IF NOT EXISTS `tutoring`.`apiRequest` (
+CREATE TABLE IF NOT EXISTS `apiRequest` (
     id INT NOT NULL AUTO_INCREMENT,
     method VARCHAR(10) NOT NULL,
     authLevel INT NOT NULL DEFAULT 0,

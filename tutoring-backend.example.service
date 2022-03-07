@@ -1,0 +1,13 @@
+[Unit]
+Type=simple
+Description=Tutoring Backend
+
+[Service]
+User=einbenutzer
+Group=einbenutzer
+WorkingDirectory=/home/einbenutzer/tutoring-backend/
+ExecStart=/usr/bin/node build/index.js
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

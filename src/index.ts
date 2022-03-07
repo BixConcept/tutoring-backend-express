@@ -101,21 +101,20 @@ fs.readFile(
   "./src/init.sql",
   (err: NodeJS.ErrnoException | null, data: Buffer) => {
     if (err) return console.error(err);
-    data
-      .toString()
-      .split(";")
-      .forEach((command) =>
-        db.execute(command, (err) => {
-          // if there is an error that is relevant
-          if (
-            err &&
-            err.code !== "ER_EMPTY_QUERY" &&
-            err.code !== "ER_DUP_ENTRY"
-          ) {
-            console.error(err);
-          }
-        })
-      );
+    let statements = data.toString().split(";");
+
+    statements.forEach((command) =>
+      db.execute(command, (err) => {
+        // if there is an error that is relevant
+        if (
+          err &&
+          err.code !== "ER_EMPTY_QUERY" &&
+          err.code !== "ER_DUP_ENTRY"
+        ) {
+          console.error(err);
+        }
+      })
+    );
   }
 );
 
