@@ -35,6 +35,12 @@ will basically just run `tsc` to "compile" TypeScript to regular JavaScript
 
 ### ACTUALLY RUNNING IT OMG
 
+#### with systemd
+
+There is an [example systemd unit](/tutoring-backend.example.service)
+
+#### just from a terminal
+
 ```
 node build/index.js
 ```
