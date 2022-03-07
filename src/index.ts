@@ -1,22 +1,22 @@
-import express from "express";
-import mysql from "mysql2";
+import bodyParser from "body-parser";
+import compression from "compression";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import bodyParser from "body-parser";
+import express from "express";
 import fs from "fs";
+import mysql from "mysql2";
 import nodemailer from "nodemailer";
-import cookieParser from "cookie-parser";
 import { getUser } from "./auth";
-import * as stats from "./routes/stats";
-import * as user from "./routes/user";
 import * as offer from "./routes/offer";
 import * as request from "./routes/request";
+import * as stats from "./routes/stats";
 import * as subject from "./routes/subject";
+import * as user from "./routes/user";
 
 export const app = express();
 const PORT = 5001 || process.env.PORT;
 dotenv.config();
-const HOST = "https://nachhilfe.3nt3.de/api";
 
 const logger = (req: express.Request, _: any, next: any) => {
   console.log(
@@ -24,7 +24,7 @@ const logger = (req: express.Request, _: any, next: any) => {
       req.user === undefined ? 0 : req.user.authLevel
     } ${req.ip}`
   );
-  db.execute(
+  pool.execute(
     `INSERT INTO apiRequest (method, authLevel, path, ip) VALUES (?, ?, ?, ?)`,
     [
       req.method || "",
@@ -34,10 +34,38 @@ const logger = (req: express.Request, _: any, next: any) => {
     ],
     (err) => {
       if (err) console.error(err, err.stack);
-      db.commit();
+      pool.commit();
     }
   );
   next();
+};
+
+const reconnectDatabase = (req: express.Request, _: any, next: any) => {
+  pool.query("SELECT 1", (err: mysql.QueryError | null) => {
+    if (err) {
+      pool = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+        multipleStatements: true,
+        typeCast: (field, useDefaultTypeCasting) => {
+          // We only want to cast tinyint fields that have a single-bit in them. If the field
+          // has more than one bit, then we cannot assume it is supposed to be a Boolean.
+          if (field.type === "TINY" && field.length === 1) {
+            return field.string() === "1";
+          }
+
+          return useDefaultTypeCasting();
+        },
+      });
+      console.log("--- RESTARTED DB CONNECTION ---");
+      next();
+      return;
+    }
+    next();
+    return;
+  });
 };
 
 app.set("trust proxy", "::ffff:172.24.0.1");
@@ -47,40 +75,55 @@ app
     cors({
       origin:
         process.env.NODE_ENV === "PRODUCTION"
-          ? ["https://nachhilfe.3nt3.de", "https://nachhilfe.sanberk.xyz"]
+          ? [
+              "https://nachhilfe.3nt3.de",
+              "https://nachhilfe.sanberk.xyz",
+              process.env.FRONTEND_URL || "",
+            ]
           : "http://localhost:3000",
       credentials: true,
     })
   )
   .use(cookieParser())
+  .use(compression())
+  .use(reconnectDatabase)
   .use(getUser)
   .use(logger)
   .use(bodyParser.json())
   .use(bodyParser.urlencoded({ extended: true }));
 
 // create connection
-export const db = mysql.createConnection({
+export let pool = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   multipleStatements: true,
+  typeCast: (field, useDefaultTypeCasting) => {
+    // We only want to cast tinyint fields that have a single-bit in them. If the field
+    // has more than one bit, then we cannot assume it is supposed to be a Boolean.
+    if (field.type === "TINY" && field.length === 1) {
+      return field.string() === "1";
+    }
+
+    return useDefaultTypeCasting();
+  },
 });
 
 // connect
-db.connect((err: mysql.QueryError | null) => {
+pool.connect((err: mysql.QueryError | null) => {
   if (err) console.log(err);
   else console.log("Connected to database!");
 });
 
 // NOREPLY@GYMHAAN.DE
 export const transporter = nodemailer.createTransport({
-  host: "mail.3nt3.de",
-  port: 465,
+  host: process.env.EMAIL_SERVER?.split(":")[0],
+  port: parseInt(process.env.EMAIL_SERVER?.split(":")[1] || "") || 465,
   secure: true,
   auth: {
-    user: "nachhilfebot@3nt3.de",
-    pass: process.env.EMAIL_PW,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
@@ -104,7 +147,7 @@ fs.readFile(
     let statements = data.toString().split(";");
 
     statements.forEach((command) =>
-      db.execute(command, (err) => {
+      pool.execute(command, (err) => {
         // if there is an error that is relevant
         if (
           err &&
@@ -129,6 +172,7 @@ app.get("/stats", stats.getStats);
 
 // user
 app.get("/user", user.getUser);
+app.get("/user/:id", user.getUserById);
 app.put("/user", user.putUser);
 app.get("/users", user.getUsers);
 app.post("/user/register", user.register);
@@ -142,6 +186,7 @@ app.post("/find", offer.find);
 app.get("/offers", offer.getOffers);
 app.post("/offer", offer.createOffer);
 app.delete("/offer/:id", offer.deleteOffer);
+app.get("/offer/:id", offer.getOfferById);
 
 // request
 app.post("/request", request.postRequest);

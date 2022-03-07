@@ -1,4 +1,4 @@
-import { app, db } from "../index";
+import { app, pool } from "../index";
 import express from "express";
 import { AuthLevel } from "../models";
 
@@ -21,7 +21,7 @@ export const postRequest = (req: express.Request, res: express.Response) => {
   }
 
   // check if the specified subject id exists
-  db.query(
+  pool.query(
     "SELECT 1 FROM subject WHERE id = ?",
     [subjectId],
     (err: any, results: any[]) => {
@@ -37,7 +37,7 @@ export const postRequest = (req: express.Request, res: express.Response) => {
       }
 
       // insert request
-      db.execute(
+      pool.execute(
         `INSERT INTO request (email, subjectId, grade) VALUES (?, ?, ?)`,
         [email, subjectId, grade],
         (err) => {
@@ -46,7 +46,7 @@ export const postRequest = (req: express.Request, res: express.Response) => {
             return res.status(500).json({ msg: "internal server error" });
           }
 
-          db.commit();
+          pool.commit();
           return res.json({ msg: "successful" });
         }
       );
@@ -60,7 +60,7 @@ export const getRequests = (req: express.Request, res: express.Response) => {
     return res.status(401).json({ msg: "unauthorized" });
   }
   if (req.user.authLevel === AuthLevel.Admin) {
-    db.query(
+    pool.query(
       "SELECT request.*, subject.name AS subjectName FROM request, subject WHERE subject.id = request.subjectId",
       (err: any, results: any[]) => {
         if (err) {

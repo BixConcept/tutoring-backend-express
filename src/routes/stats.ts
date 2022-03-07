@@ -1,4 +1,4 @@
-import { db } from "../index";
+import { pool } from "../index";
 import express from "express";
 import { AuthLevel } from "../models";
 
@@ -8,7 +8,7 @@ export const getApiRequests = (req: express.Request, res: express.Response) => {
     return res.status(401).json({ msg: "unauthorized" });
   }
   if (req.user.authLevel === AuthLevel.Admin) {
-    db.query("SELECT * FROM apiRequest", [], (err: any, results: any[]) => {
+    pool.query("SELECT * FROM apiRequest", [], (err: any, results: any[]) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ msg: "internal server error" });
@@ -20,7 +20,7 @@ export const getApiRequests = (req: express.Request, res: express.Response) => {
 
 //app.get("/stats", (req: express.Request, res: express.Response) => {
 export const getStats = (req: express.Request, res: express.Response) => {
-  db.query(
+  pool.query(
     `SELECT
              (SELECT COUNT(*) FROM user) AS users,
              (SELECT COUNT(*) FROM apiRequest) AS apiRequests,

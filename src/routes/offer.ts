@@ -1,4 +1,4 @@
-import { db } from "../index";
+import { pool } from "../index";
 import express from "express";
 import { AuthLevel, Offer } from "../models";
 
@@ -19,7 +19,11 @@ export const find = (req: express.Request, res: express.Response) => {
         user.grade AS grade,
         offer.subjectId AS subjectId,
         subject.name AS subjectName,
-        user.misc
+        user.misc,
+        user.hasSignal,
+        user.hasWhatsapp,
+        user.hasDiscord,
+        user.discordUser
     FROM
         offer 
     INNER JOIN user ON offer.userId = user.id
@@ -31,7 +35,7 @@ export const find = (req: express.Request, res: express.Response) => {
 
   // TODO: return as seperate objects (instead of user_id -> user: {id:})
 
-  db.query(query, [subjectId, grade], (err: any, results: any) => {
+  pool.query(query, [subjectId, grade], (err: any, results: any) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ msg: "internal server error" });
@@ -46,7 +50,7 @@ export const getOffers = (req: express.Request, res: express.Response) => {
     return res.status(401).json({ msg: "unauthorized" });
   }
   if (req.user.authLevel === AuthLevel.Admin) {
-    db.query(
+    pool.query(
       "SELECT offer.*, subject.name as subjectName FROM offer, subject WHERE subject.id = offer.subjectId",
       (err: any, results: Offer[]) => {
         if (err) {
@@ -74,7 +78,7 @@ export const createOffer = (req: express.Request, res: express.Response) => {
       });
     }
 
-    db.query(
+    pool.query(
       "SELECT COUNT(1) FROM subject WHERE id = ?",
       [subjectId],
       (err: any, results: any[]) => {
@@ -88,7 +92,7 @@ export const createOffer = (req: express.Request, res: express.Response) => {
         }
 
         // TODO: check for duplicate subjects per user
-        db.query(
+        pool.query(
           `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();`,
           [req.user?.id, subjectId, maxGrade],
           (err: any, results: any[]) => {
@@ -99,7 +103,7 @@ export const createOffer = (req: express.Request, res: express.Response) => {
 
             let offerId = results[0].insertId;
 
-            db.query(
+            pool.query(
               `SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE subject.id = offer.subjectId AND offer.id = ?`,
               [offerId],
               (err: any, results: any[]) => {
@@ -128,7 +132,7 @@ export const deleteOffer = (req: express.Request, res: express.Response) => {
     return res.status(400).json({ msg: "No offer id was specified" });
   }
 
-  db.query(
+  pool.query(
     "SELECT * FROM offer WHERE id = ?",
     [offerId],
     (err: any, results: any[]) => {
@@ -152,7 +156,7 @@ export const deleteOffer = (req: express.Request, res: express.Response) => {
         });
       }
 
-      db.execute("DELETE FROM offer WHERE id = ?", [offerId], (err) => {
+      pool.execute("DELETE FROM offer WHERE id = ?", [offerId], (err) => {
         if (err) {
           console.error(err);
           return res.status(500).json({ msg: "internal server error" });
@@ -160,6 +164,29 @@ export const deleteOffer = (req: express.Request, res: express.Response) => {
 
         return res.status(200).json({ msg: "successful" });
       });
+    }
+  );
+};
+
+export const getOfferById = (req: express.Request, res: express.Response) => {
+  const id = parseInt(req.params.id);
+  if (!id) {
+    return res.status(400).json({ msg: "You have to provide an id" });
+  }
+  pool.query(
+    "SELECT * FROM offer where id = ?",
+    [id],
+    (err: any, result: any) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ msg: "internal server error" });
+      }
+      if (result.length === 0) {
+        return res
+          .status(404)
+          .json({ msg: `user with id ${id} does not exist` });
+      }
+      return res.json({ content: result });
     }
   );
 };

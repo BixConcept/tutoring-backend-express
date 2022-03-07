@@ -1,4 +1,4 @@
-import { db } from "../index";
+import { pool } from "../index";
 import express from "express";
 import { Subject } from "../models";
 
@@ -7,7 +7,7 @@ export const getSubjects = async (
   _: express.Request,
   res: express.Response
 ) => {
-  db.query(
+  pool.query(
     "SELECT * FROM subject WHERE NOT name = 'Fortnite'",
     (err: any, results: Subject[]) => {
       if (err) {

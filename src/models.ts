@@ -8,6 +8,10 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   offers: Offer[];
+  hasSignal: boolean;
+  hasWhatsapp: boolean;
+  discordUser: string;
+  hasDiscord: boolean;
 }
 
 export interface Offer {
