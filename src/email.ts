@@ -5,7 +5,6 @@ import { MailOptions } from "nodemailer/lib/smtp-transport";
 import { pool, emailToName } from ".";
 import { Offer, User } from "./models";
 
-export const FRONTEND = process.env.FRONTEND_URL;
 // send a verification email
 export async function sendVerificationEmail(
   transporter: any,
@@ -17,15 +16,16 @@ export async function sendVerificationEmail(
     const template = Handlebars.compile(data.toString().replace("\n", ""));
 
     const mailOptions: MailOptions = {
-      from: process.env.MAIL_USER,
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "Nachhilfeplattform GymHaan - Account bestätigen",
       html: template({
-        url: `${FRONTEND}/verify/${code}`,
+        url: `${process.env.FRONTEND_URL}/verify/${code}`,
         name: emailToName(email).split(" ")[0],
       }),
       headers: { "Content-Type": "text/html" },
     };
+    console.log(process.env);
 
     transporter.sendMail(
       mailOptions,
@@ -46,11 +46,11 @@ export async function sendOTPEmail(
     const template = Handlebars.compile(data.toString().replace("\n", ""));
 
     const mailOptions: MailOptions = {
-      from: process.env.MAIL_USER,
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "Nachhilfeplattform GymHaan - Anmelden",
       html: template({
-        url: `${FRONTEND}/verify/${code}`,
+        url: `${process.env.FRONTEND_URL}/verify/${code}`,
         name: emailToName(email).split(" ")[0],
       }),
       headers: { "Content-Type": "text/html" },
@@ -90,7 +90,7 @@ export async function notifyPeople(
 
         results.forEach(async (request) => {
           const mailOptions: MailOptions = {
-            from: process.env.MAIL_USER,
+            from: process.env.EMAIL_USER,
             to: request.email,
             subject: "Benachrichting Nachhilfe GymHaan",
             html: template({

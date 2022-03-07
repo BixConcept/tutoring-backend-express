@@ -1,64 +1,63 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title></title>
   </head>
   <body>
-      <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-          body {
-              font-family: 'Inter', sans-serif;
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      h1 {
+        text-align: center;
+      }
+      .content {
+        width: 50vw;
 
-          }
-          h1 {
-              text-align: center;
-          }
-          .content {
-              display: flex;
-              flex-direction: column;
-              width: 50vw;
+        margin: auto;
+        margin-top: 10vw;
+        padding: 3rem;
+        border-radius: 0.5rem;
+        -moz-box-shadow: inset 0 0 5px #c9c9c9;
+        -webkit-box-shadow: inset 0 0 5px #c9c9c9;
+        box-shadow: inset 0 0 5px #c9c9c9;
+      }
+      .submit {
+        padding: 0.3rem 3rem;
+        margin: auto;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+        text-align: center;
+        background-color: #98c222;
+        color: black;
+        text-decoration: none;
+      }
 
-              margin: auto;
-              margin-top: 10vw;
-              padding: 3rem;
-              border-radius: 0.5rem;
-              -moz-box-shadow: inset 0 0 5px #c9c9c9;
-              -webkit-box-shadow: inset 0 0 5px #c9c9c9;
-              box-shadow: inset 0 0 5px #c9c9c9;
-          }
-          .submit {
-              padding: 0.3rem 3rem;
-              margin: auto;
-              border-radius: 0.5rem;
-              font-size: 1rem;
-              cursor: pointer;
-              text-align: center;
-              background-color: #98c222;
-              color: black;
-              text-decoration: none;
-          }
-
-          .submit:visited {
-              color: black;
-          }
-          .gray-text {
-              color: gray;
-              font-style: italic;
-          }
-      </style>
-      <div class="content">
-        <h1>Verifiziere deine E-Mail Adresse</h1>
-          <p>Hey, {{name}}👋<br>
-          Bitte klicke auf den Button, um deinen Account auf unserer Nachhilfeseite zu bestätigen. <br>
-          Bis gleich😃  </p>
-          <br>
-          <a href="{{url}}" class="submit">Verifizieren</a>
-          <br>
-          <br>
-          <br>
-          <br>
-          <p class="gray-text">Diese Mail ist automatisch generiert. Solltest du dich nirgendwo registriert haben, kannst du diese E-Mail einfach ignorieren.</p>
-      </div>
+      .submit:visited {
+        color: black;
+      }
+      .gray-text {
+        color: gray;
+        font-style: italic;
+      }
+    </style>
+    <div class="content">
+      <h1>Verifiziere deine E-Mail Adresse</h1>
+      <p>Hey, {{name}} 👋<br /></p>
+      <p>
+        Bitte klicke auf den Button, um deinen Account auf unserer
+        Nachhilfeseite zu bestätigen. <br />
+      </p>
+      <p>Bis gleich😃</p>
+      <br />
+      <a href="{{url}}" class="submit">Verifizieren</a>
+      <p class="gray-text">
+        Diese Mail ist automatisch generiert. Solltest du dich nirgendwo
+        registriert haben, kannst du diese E-Mail einfach ignorieren.
+      </p>
+    </div>
   </body>
 </html>
