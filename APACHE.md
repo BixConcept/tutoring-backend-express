@@ -5,7 +5,7 @@ LoadModule proxy_module modules/mod_proxy.so
 LoadModule proxy_http_module modules/mod_proxy_http.so
 ```
 
-Add this somewhere before your `<Directory>` configuration
+Add this somewhere in your configuration to proxy requests to `/api/*` to `localhost:5001/*`
 
 ```
 ProxyPass "/api" "http://localhost:5001"
