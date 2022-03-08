@@ -29,7 +29,9 @@ export async function sendVerificationEmail(
     transporter.sendMail(
       mailOptions,
       (err: Error | null, info: SentMessageInfo) => {
-        console.error(err, info);
+        if (err) {
+          console.error(err, info);
+        }
       }
     );
   });
@@ -58,7 +60,9 @@ export async function sendOTPEmail(
     transporter.sendMail(
       mailOptions,
       (err: Error | null, info: SentMessageInfo) => {
-        console.error(err, info);
+        if (err) {
+          console.error(err, info);
+        }
       }
     );
   });
@@ -103,7 +107,9 @@ export async function notifyPeople(
           await transporter.sendMail(
             mailOptions,
             (err: Error | null, info: SentMessageInfo) => {
-              console.log(info, err);
+              if (err) {
+                console.log(info, err);
+              }
             }
           );
 

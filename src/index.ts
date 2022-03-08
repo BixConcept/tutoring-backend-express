@@ -8,6 +8,7 @@ import fs from "fs";
 import mysql from "mysql2";
 import nodemailer from "nodemailer";
 import { getUser } from "./auth";
+import { sendOTPEmail } from "./email";
 import * as offer from "./routes/offer";
 import * as request from "./routes/request";
 import * as stats from "./routes/stats";
@@ -120,7 +121,7 @@ pool.connect((err: mysql.QueryError | null) => {
 export const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_SERVER?.split(":")[0],
   port: parseInt(process.env.EMAIL_SERVER?.split(":")[1] || "") || 465,
-  secure: true,
+  secure: process.env.EMAIL_SERVER?.split(":")[1] === "465" ? true : false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
