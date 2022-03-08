@@ -173,7 +173,6 @@ app.get("/stats", stats.getStats);
 
 // user
 app.get("/user", user.getUser);
-app.get("/user/:id", user.getUserById);
 app.put("/user", user.putUser);
 app.get("/users", user.getUsers);
 app.post("/user/register", user.register);
@@ -181,6 +180,7 @@ app.get("/user/verify", user.verify);
 app.post("/user/otp", user.otp);
 app.delete("/user", user.deleteMyself);
 app.delete("/user/:id", user.deleteUser);
+app.get("/user/:id", user.getUserById);
 
 // offer
 app.post("/find", offer.find);
