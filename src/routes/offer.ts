@@ -49,7 +49,7 @@ export const getOffers = (req: express.Request, res: express.Response) => {
   if (!req.user) {
     return res.status(401).json({ msg: "unauthorized" });
   }
-  if (req.user.authLevel === AuthLevel.Admin) {
+  if (req.user.authLevel >= AuthLevel.Verified) {
     pool.query(
       "SELECT offer.*, subject.name as subjectName FROM offer, subject WHERE subject.id = offer.subjectId",
       (err: any, results: Offer[]) => {

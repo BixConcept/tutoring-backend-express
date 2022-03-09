@@ -37,6 +37,7 @@ export const getUser = (req: any, _: Express.Response, next: NextFunction) => {
               console.error("auth/getUser: ", err);
               return;
             }
+            req.user.offers = values;
             next();
           }
         );

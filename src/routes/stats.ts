@@ -7,11 +7,16 @@ export const getApiRequests = (req: express.Request, res: express.Response) => {
   if (!req.user) {
     return res.status(401).json({ msg: "unauthorized" });
   }
-  if (req.user.authLevel === AuthLevel.Admin) {
+  if (req.user.authLevel >= AuthLevel.Verified) {
     pool.query("SELECT * FROM apiRequest", [], (err: any, results: any[]) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ msg: "internal server error" });
+      }
+
+      // remove everything except id and date
+      if ((req.user?.authLevel || 0) < AuthLevel.Admin) {
+        results = results.map((r) => ({ id: r.id, time: r.time }));
       }
       return res.json({ content: results });
     });

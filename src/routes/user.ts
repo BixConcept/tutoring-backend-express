@@ -452,7 +452,7 @@ export const getUsers = (req: express.Request, res: express.Response) => {
   if (!req.user) {
     return res.status(401).json({ msg: "unauthorized" });
   }
-  if (req.user.authLevel === AuthLevel.Admin) {
+  if (req.user.authLevel >= AuthLevel.Verified) {
     pool.query("SELECT * FROM user", (err: any, results: User[]) => {
       if (err) {
         console.error(err);
