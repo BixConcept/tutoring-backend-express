@@ -176,18 +176,19 @@ app.get("/user", user.getUser);
 app.put("/user", user.putUser);
 app.get("/users", user.getUsers);
 app.post("/user/register", user.register);
+app.post("/user/logout", user.logout);
 app.get("/user/verify", user.verify);
 app.post("/user/otp", user.otp);
 app.delete("/user", user.deleteMyself);
-app.delete("/user/:id", user.deleteUser);
-app.get("/user/:id", user.getUserById);
+app.delete("/user/:id(\\d+)", user.deleteUser);
+app.get("/user/:id(\\d+)", user.getUserById);
 
 // offer
 app.post("/find", offer.find);
 app.get("/offers", offer.getOffers);
 app.post("/offer", offer.createOffer);
-app.delete("/offer/:id", offer.deleteOffer);
-app.get("/offer/:id", offer.getOfferById);
+app.delete("/offer/:id(\\d+)", offer.deleteOffer);
+app.get("/offer/:id(\\d+)", offer.getOfferById);
 
 // request
 app.post("/request", request.postRequest);
