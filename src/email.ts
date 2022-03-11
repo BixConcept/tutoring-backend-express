@@ -29,9 +29,7 @@ export async function sendVerificationEmail(
     transporter.sendMail(
       mailOptions,
       (err: Error | null, info: SentMessageInfo) => {
-        if (err) {
-          console.error(err, info);
-        }
+        console.log(err, info);
       }
     );
   });

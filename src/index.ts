@@ -76,11 +76,7 @@ app
     cors({
       origin:
         process.env.NODE_ENV === "PRODUCTION"
-          ? [
-              "https://nachhilfe.3nt3.de",
-              "https://nachhilfe.sanberk.xyz",
-              process.env.FRONTEND_URL || "",
-            ]
+          ? [process.env.FRONTEND_URL || ""]
           : "http://localhost:3000",
       credentials: true,
     })
