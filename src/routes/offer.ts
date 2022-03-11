@@ -1,6 +1,7 @@
-import { pool } from "../index";
+import { emailToName, pool, transporter } from "../index";
 import express from "express";
 import { AuthLevel, Offer } from "../models";
+import { notifyPeople } from "../email";
 
 // list matching offers
 // app.post("/find", (req: express.Request, res: express.Response) => {
@@ -110,6 +111,10 @@ export const createOffer = (req: express.Request, res: express.Response) => {
                 if (err) {
                   console.error(err);
                   return res.status(500).json({ msg: "internal server error" });
+                }
+
+                if (req.user) {
+                  notifyPeople(transporter, results[0], req.user);
                 }
 
                 return res.json({ content: results[0] });
