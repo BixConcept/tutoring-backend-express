@@ -310,6 +310,8 @@ export const getUser = (req: express.Request, res: express.Response) => {
 export const putUser = (req: express.Request, res: express.Response) => {
   if (req.user) {
     const changes = req.body;
+    changes.createdAt = new Date(changes.createdAt);
+    changes.updatedAt = new Date(changes.updatedAt);
 
     let oldUser: User = req.user;
 
@@ -328,9 +330,16 @@ export const putUser = (req: express.Request, res: express.Response) => {
 
       Object.keys(changes).forEach((change: string) => {
         // if the proposed change is inside the list of unchangeables
-        if (
+        if ((oldUser as any)[change] instanceof Date) {
+          if (
+            unchangeables.indexOf(change) > -1 &&
+            changes[change].getTime() !== (oldUser as any)[change].getTime()
+          ) {
+            errors.push(change);
+          }
+        } else if (
           unchangeables.indexOf(change) > -1 &&
-          changes[change] !== (req.user as any)[change] // check if it is still the same
+          changes[change] !== (oldUser as any)[change] // check if it is still the same
         ) {
           errors.push(change);
         }
@@ -374,7 +383,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
     console.log(updated);
 
     pool.query(
-      "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, authLevel = ?, misc = ?, hasSignal = ?, hasWhatsapp = ?, hasDiscord = ?, discordUser = ?, WHERE id = ?",
+      "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, authLevel = ?, misc = ?, hasSignal = ?, hasWhatsapp = ?, hasDiscord = ?, discordUser = ? WHERE id = ?",
       [
         updated.id,
         updated.email,
@@ -383,50 +392,21 @@ export const putUser = (req: express.Request, res: express.Response) => {
         updated.grade,
         updated.authLevel,
         updated.misc === undefined ? null : updated.misc,
-        req.user.id,
         updated.hasSignal,
         updated.hasWhatsapp,
         updated.hasDiscord,
         updated.discordUser,
+        updated.id,
       ],
       (err) => {
         if (err) {
           console.error(err);
           return res.status(500).json({ msg: "internal server error" });
         }
+        pool.commit();
+        return res.json({ msg: "successful" });
       }
     );
-
-    pool.commit();
-
-    if (changes.subjects) {
-      // first delete everything, then insert new ones
-      // this is not the correctest way to do this, but it is a whole lot more performant than doing something with O(n^3)
-      pool.execute(
-        `DELETE FROM offer WHERE userId = ?`,
-        [req.user.id],
-        (err: any | null) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).json({ msg: "internal server error" });
-          }
-
-          Object.keys(changes.subjects).forEach((subject: string) => {
-            pool.execute(
-              `INSERT INTO offer (subject, maxGrade, userId) VALUES (?, ?, ?)`,
-              [subject, changes.subjects[subject], req.user?.id],
-              (error: mysql.QueryError | null) => {
-                if (error) {
-                  console.error(error);
-                }
-                pool.commit();
-              }
-            );
-          });
-        }
-      );
-    }
-    return res.json({ msg: "successful" });
   } else {
     return res.status(401).json({ msg: "unauthorized" });
   }

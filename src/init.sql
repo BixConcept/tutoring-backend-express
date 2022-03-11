@@ -52,7 +52,7 @@ INSERT INTO `subject` (`id`, `name`) VALUES
 (7, 'Französisch'),
 (8, 'Geschichte'),
 (9, 'Informatik'),
-(10, 'kath. Reli'),
+(10, 'kath. Religion'),
 (11, 'Kunst'),
 (12, 'Latein'),
 (13, 'Mathematik'),
