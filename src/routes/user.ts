@@ -471,3 +471,27 @@ export const getUserById = (req: express.Request, res: express.Response) => {
     }
   );
 };
+
+export const emailAvailable = (req: express.Request, res: express.Response) => {
+  const email = req.params.email;
+  if (!email) {
+    res.status(400).json({ msg: "you have to provide an email address" });
+  }
+
+  pool.query(
+    "SELECT 1 FROM user WHERE email = ?",
+    [email],
+    (err: any, results: any) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ msg: "internal server error" });
+      }
+
+      if (results.length === 0) {
+        return res.json({ msg: "available" });
+      } else {
+        return res.status(409).json({ msg: "taken" });
+      }
+    }
+  );
+};
