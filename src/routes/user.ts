@@ -317,13 +317,7 @@ export const putUser = (req: express.Request, res: express.Response) => {
 
     if (req.user.authLevel != AuthLevel.Admin) {
       // list of attributes we don't allow the user to change
-      const unchangeables: string[] = [
-        "id",
-        "createdAt",
-        "updatedAt",
-        "lastActivity",
-        "authLevel",
-      ];
+      const unchangeables: string[] = ["id", "authLevel"];
 
       // list of attributes the user tried to change but isn't allowed to
       let errors: string[] = [];
