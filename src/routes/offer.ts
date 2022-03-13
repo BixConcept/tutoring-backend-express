@@ -36,6 +36,16 @@ export const find = (req: express.Request, res: express.Response) => {
 
   // TODO: return as seperate objects (instead of user_id -> user: {id:})
 
+  console.log(req.user);
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+  if (req.user.authLevel < 1) {
+    return res
+      .status(403)
+      .json({ msg: "you have to verify your email before continuing" });
+  }
+
   pool.query(query, [subjectId, grade], (err: any, results: any) => {
     if (err) {
       console.error(err);
