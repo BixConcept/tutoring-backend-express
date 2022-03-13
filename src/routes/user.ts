@@ -19,7 +19,8 @@ const generateCode = (n: number = 32): string => {
 //app.post("/user/register", (req: express.Request, res: express.Response) => {
 export const register = (req: express.Request, res: express.Response) => {
   const email: string = req.body.email;
-  const subjectsmaybe: { [key: string]: string | number } = req.body.subjects; // because we are not intelligent enough to manage react state
+  const subjectsmaybe: { [key: string]: string | number } =
+    req.body.subjects || {}; // because we are not intelligent enough to manage react state
   const misc: string = req.body.misc;
   const grade: number = req.body.grade;
   const phoneNumber: string = req.body.phoneNumber;
@@ -28,6 +29,7 @@ export const register = (req: express.Request, res: express.Response) => {
   const hasWhatsapp: boolean = req.body.hasWhatsapp || false;
   const hasDiscord: boolean = req.body.hasDiscord || false;
   const discordUser: string | null = req.body.discordUser || null;
+  const intent: string | null = req.body.intent || null;
 
   let subjects: { [key: number]: number } = {};
   // converts string grades to numbers
@@ -53,15 +55,10 @@ export const register = (req: express.Request, res: express.Response) => {
   // check if the given subjed ids are valid
   const givenIds = Object.keys(subjects);
 
-  if (givenIds.length === 0) {
-    return res
-      .status(400)
-      .json({ msg: "you have to specify subjects you want to teach" });
-  }
-
-  const query = `SELECT id, name FROM subject WHERE id IN (${givenIds.join(
-    ","
-  )});`;
+  const query =
+    givenIds.length > 0
+      ? `SELECT id, name FROM subject WHERE id IN (${givenIds.join(",")});` // check if the id is in subjects
+      : `SELECT id, name FROM subject WHERE 0`; // zero rows if there are no given ids
 
   pool.query(query, (err: any, dbSubjects: any) => {
     if (err) {
@@ -123,6 +120,9 @@ export const register = (req: express.Request, res: express.Response) => {
         );
         pool.commit();
 
+        if (intent) {
+          code += "?intent=" + encodeURIComponent(intent);
+        }
         sendVerificationEmail(transporter, code, email);
 
         return res.json({ msg: "account was created" });
@@ -135,8 +135,9 @@ export const register = (req: express.Request, res: express.Response) => {
 // app.get("/user/verify", (req: express.Request, res: express.Response) => {
 export const verify = (req: express.Request, res: express.Response) => {
   const code = req.query.code;
+
   if (!code) {
-    return res.status(401).json({ msg: "invalid code" });
+    return res.status(400).json({ msg: "no code specified" });
   }
 
   // check if there are any codes that match the one given
@@ -145,7 +146,10 @@ export const verify = (req: express.Request, res: express.Response) => {
     [code],
     (err: any, results: any) => {
       // if not, return error
-      if (err) return res.status(401).json({ msg: "invalid code" });
+      if (err) {
+        console.error(err);
+        return res.status(401).json({ msg: "invalid code" });
+      }
       if (!results[0]["COUNT(1)"]) {
         return res.status(401).json({ msg: "invalid code" });
       }
@@ -171,7 +175,7 @@ export const verify = (req: express.Request, res: express.Response) => {
           [userId],
           (err: any, users: any[]) => {
             if (err) {
-              console.log(err);
+              console.error(err);
               return;
             }
 
@@ -197,8 +201,8 @@ export const verify = (req: express.Request, res: express.Response) => {
           maxAge: 1000 * 60 * 60 * 24 * 30,
           path: "/",
           httpOnly: true,
-          sameSite: "none",
-          secure: true,
+          sameSite: "lax",
+          secure: false,
         });
 
         return res.json({ msg: "account was verified" });
