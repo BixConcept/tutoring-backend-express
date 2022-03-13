@@ -123,7 +123,7 @@ export const register = (req: express.Request, res: express.Response) => {
         if (intent) {
           code += "?intent=" + encodeURIComponent(intent);
         }
-        sendVerificationEmail(transporter, code, email);
+        sendVerificationEmail(transporter, code, email, emailToName(email));
 
         return res.json({ msg: "account was created" });
       }
@@ -239,7 +239,7 @@ export const otp = (req: express.Request, res: express.Response) => {
         return;
       }
 
-      const email: string = results[0].email;
+      const { email, name } = results[0];
 
       let code = generateCode(32);
       pool.execute(
@@ -254,7 +254,7 @@ export const otp = (req: express.Request, res: express.Response) => {
         }
       );
 
-      await sendOTPEmail(transporter, code, email);
+      await sendOTPEmail(transporter, code, email, name.split(" ")[0]);
       res.json({ msg: "email sent" });
     }
   );

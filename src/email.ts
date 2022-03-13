@@ -2,14 +2,15 @@ import fs from "fs";
 import Handlebars from "handlebars";
 import { SentMessageInfo } from "nodemailer/lib/smtp-connection";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
-import { pool, emailToName } from ".";
+import { pool } from ".";
 import { Offer, User } from "./models";
 
 // send a verification email
 export async function sendVerificationEmail(
   transporter: any,
   code: string,
-  email: string
+  email: string,
+  name: string
 ) {
   fs.readFile("./src/emails/verification_email.html", (err, data) => {
     if (err) return console.error(err);
@@ -21,7 +22,7 @@ export async function sendVerificationEmail(
       subject: "Nachhilfeplattform GymHaan - Account bestätigen",
       html: template({
         url: `${process.env.FRONTEND_URL}/verify/${code}`,
-        name: emailToName(email).split(" ")[0],
+        name: name.split(" ")[0],
       }),
       headers: { "Content-Type": "text/html" },
     };
@@ -38,7 +39,8 @@ export async function sendVerificationEmail(
 export async function sendOTPEmail(
   transporter: any,
   code: string,
-  email: string
+  email: string,
+  name: string
 ) {
   fs.readFile("./src/emails/otp_email.html", (err, data) => {
     if (err) return console.error(err);
@@ -50,7 +52,7 @@ export async function sendOTPEmail(
       subject: "Nachhilfeplattform GymHaan - Anmelden",
       html: template({
         url: `${process.env.FRONTEND_URL}/verify/${code}`,
-        name: emailToName(email).split(" ")[0],
+        name,
       }),
       headers: { "Content-Type": "text/html" },
     };
