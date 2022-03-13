@@ -160,7 +160,9 @@ fs.readFile(
 
 /* ROUTES */
 app.get("/", (_: express.Request, res: express.Response) => {
-  res.send("<h1>Tutoring REST API</h1>");
+  res.send(
+    '<h1>Tutoring REST API</h1><a href="https://github.com/bixconcept/tutoring-backend-express">Source Code</a>'
+  );
 });
 
 // stats
