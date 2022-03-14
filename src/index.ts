@@ -1,4 +1,5 @@
 import bodyParser from "body-parser";
+import { exec } from "child_process";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -160,9 +161,11 @@ fs.readFile(
 
 /* ROUTES */
 app.get("/", (_: express.Request, res: express.Response) => {
-  res.send(
-    '<h1>Tutoring REST API</h1><a href="https://github.com/bixconcept/tutoring-backend-express">Source Code</a>'
-  );
+  exec("git rev-parse --short HEAD", (error, stdout, stderr) => {
+    res.send(
+      `<h1>Tutoring REST API</h1><a href="https://github.com/bixconcept/tutoring-backend-express">Source Code</a><p>Version <a href="https://github.com/BixConcept/tutoring-backend-express/commit/${stdout}">${stdout}</p>`
+    );
+  });
 });
 
 // stats
