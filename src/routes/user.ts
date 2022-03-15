@@ -431,12 +431,18 @@ export const getUsers = (req: express.Request, res: express.Response) => {
     return res.status(401).json({ msg: "unauthorized" });
   }
   if (req.user.authLevel >= AuthLevel.Verified) {
-    pool.query("SELECT * FROM user", (err: any, results: User[]) => {
+    pool.query("SELECT * FROM user", async (err: any, results: User[]) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ msg: "internal server error" });
       }
-      return res.json({ content: results });
+
+      const asdf = results.map(async (x) => {
+        return { ...x, ...{ offers: await getOffers(x.id) } };
+      });
+      const resolved = await Promise.all(asdf);
+
+      return res.json({ content: resolved });
     });
   } else {
     return res.status(403).json({ msg: "forbidden" });
