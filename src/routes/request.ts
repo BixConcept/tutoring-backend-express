@@ -70,7 +70,11 @@ export const getRequests = (req: express.Request, res: express.Response) => {
 
         // remove email addresses and other data for non-admins
         if ((req.user?.authLevel || 0) < AuthLevel.Admin) {
-          results = results.map((r) => ({ id: r.id, subjectId: r.subjectId }));
+          results = results.map((r) => ({
+            id: r.id,
+            subjectId: r.subjectId,
+            subjectName: r.subjectName,
+          }));
         }
         return res.json({ content: results });
       }
