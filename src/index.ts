@@ -12,7 +12,7 @@ import { getUser } from "./auth";
 // import { sendOTPEmail } from "./email";
 // import * as offer from "./routes/offer";
 // import * as request from "./routes/request";
-// import * as stats from "./routes/stats";
+import * as stats from "./routes/stats";
 // import * as subject from "./routes/subject";
 import * as user from "./routes/user";
 
@@ -150,8 +150,8 @@ app.get("/", (_: express.Request, res: express.Response) => {
 });
 
 // stats
-// app.get("/apiRequests", stats.getApiRequests);
-// app.get("/stats", stats.getStats);
+app.get("/apiRequests", stats.getApiRequests);
+app.get("/stats", stats.getStats);
 
 // // user
 app.get("/user", user.getUser);
