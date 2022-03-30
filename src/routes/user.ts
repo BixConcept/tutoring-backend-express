@@ -432,32 +432,32 @@ export const getUsers = async (req: express.Request, res: express.Response) => {
   }
 };
 
-// export const getUserById = (req: express.Request, res: express.Response) => {
-//   const id = parseInt(req.params.id);
-//   if (!id) {
-//     return res.status(400).json({ msg: "You have to provide an id" });
-//   }
-//   pool.query(
-//     "SELECT * FROM user where id = ?",
-//     [id],
-//     async (err: any, result: any) => {
-//       if (err) {
-//         console.error(err);
-//         return res.status(500).json({ msg: "internal server error" });
-//       }
-//       if (result.length === 0) {
-//         return res
-//           .status(404)
-//           .json({ msg: `user with id ${id} does not exist` });
-//       }
-//       delete result.passwordHash;
+export const getUserById = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const id = parseInt(req.params.id);
+  if (!id) {
+    return res.status(400).json({ msg: "You have to provide an id" });
+  }
+  try {
+    const result = emptyOrRows(
+      await query("SELECT * FROM user where id = ?", [id])
+    );
+    if (result.length === 0) {
+      return res.status(404).json({ msg: `user with id ${id} does not exist` });
+    }
 
-//       result[0].offers = await getOffers(id);
+    delete result[0].passwordHash;
 
-//       return res.json({ content: result[0] });
-//     }
-//   );
-// };
+    result[0].offers = await getOffers(id);
+
+    return res.json({ content: result[0] });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(500).json({ msg: "internal server error" });
+  }
+};
 
 // export const emailAvailable = (req: express.Request, res: express.Response) => {
 //   const email = req.params.email;
