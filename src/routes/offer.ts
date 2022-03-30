@@ -79,66 +79,68 @@ export const getOffers = async (
   }
 };
 
-// export const createOffer = (req: express.Request, res: express.Response) => {
-//   if (req.user === undefined) {
-//     return res.status(401).json({ msg: "unauthorized" });
-//   } else {
-//     let subjectId: number = req.body.subjectId;
-//     let maxGrade: number = req.body.maxGrade;
+export const createOffer = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  if (req.user === undefined) {
+    return res.status(401).json({ msg: "unauthorized" });
+  } else {
+    let subjectId: number = req.body.subjectId;
+    let maxGrade: number = req.body.maxGrade;
 
-//     if (maxGrade < 5 || maxGrade > 13) {
-//       return res.status(400).json({
-//         msg: "Grade out of bounds",
-//       });
-//     }
+    if (maxGrade < 5 || maxGrade > 13) {
+      return res.status(400).json({
+        msg: "Grade out of bounds",
+      });
+    }
 
-//     pool.query(
-//       "SELECT COUNT(1) FROM subject WHERE id = ?",
-//       [subjectId],
-//       (err: any, results: any[]) => {
-//         if (err) {
-//           console.error(err);
-//           return res.status(500).json({ msg: "internal server error" });
-//         }
+    try {
+      const results = emptyOrRows(
+        await query("SELECT COUNT(1) FROM subject WHERE id = ?", [subjectId])
+      );
+      if (results.length === 0) {
+        return res.status(400).json({ msg: "invalid subject" });
+      }
 
-//         if (results.length === 0) {
-//           return res.status(400).json({ msg: "invalid subject" });
-//         }
+      // TODO: check for duplicate subjects per user
+      try {
+        const results = emptyOrRows(
+          await query(
+            `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();`,
+            [req.user?.id, subjectId, maxGrade]
+          )
+        );
 
-//         // TODO: check for duplicate subjects per user
-//         pool.query(
-//           `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();`,
-//           [req.user?.id, subjectId, maxGrade],
-//           (err: any, results: any[]) => {
-//             if (err) {
-//               console.error(err);
-//               return res.status(500).json({ msg: "internal server error" });
-//             }
+        let offerId = results[0].insertId;
 
-//             let offerId = results[0].insertId;
+        try {
+          const results = emptyOrRows(
+            await query(
+              `SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE subject.id = offer.subjectId AND offer.id = ?`,
+              [offerId]
+            )
+          );
 
-//             pool.query(
-//               `SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE subject.id = offer.subjectId AND offer.id = ?`,
-//               [offerId],
-//               (err: any, results: any[]) => {
-//                 if (err) {
-//                   console.error(err);
-//                   return res.status(500).json({ msg: "internal server error" });
-//                 }
+          if (req.user) {
+            notifyPeople(transporter, results[0], req.user);
+          }
 
-//                 if (req.user) {
-//                   notifyPeople(transporter, results[0], req.user);
-//                 }
-
-//                 return res.json({ content: results[0] });
-//               }
-//             );
-//           }
-//         );
-//       }
-//     );
-//   }
-// };
+          return res.json({ content: results[0] });
+        } catch (e: any) {
+          console.error(e);
+          return res.status(500).json({ msg: "internal server error" });
+        }
+      } catch (e: any) {
+        console.error(e);
+        return res.status(500).json({ msg: "internal server error" });
+      }
+    } catch (e: any) {
+      console.error(e);
+      return res.status(500).json({ msg: "internal server error" });
+    }
+  }
+};
 
 // export const deleteOffer = (req: express.Request, res: express.Response) => {
 //   if (!req.user) {
