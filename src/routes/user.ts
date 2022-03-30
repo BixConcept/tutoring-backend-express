@@ -122,134 +122,129 @@ export const register = async (req: express.Request, res: express.Response) => {
   }
 };
 
-// // Account verifizieren
-// // app.get("/user/verify", (req: express.Request, res: express.Response) => {
-// export const verify = (req: express.Request, res: express.Response) => {
-//   const code = req.query.code;
+// Account verifizieren
+// app.get("/user/verify", (req: express.Request, res: express.Response) => {
+export const verify = async (req: express.Request, res: express.Response) => {
+  const code = req.query.code;
 
-//   if (!code) {
-//     return res.status(400).json({ msg: "no code specified" });
-//   }
+  if (!code) {
+    return res.status(400).json({ msg: "no code specified" });
+  }
 
-//   // check if there are any codes that match the one given
-//   pool.query(
-//     "SELECT COUNT(1) FROM verificationToken WHERE verificationToken.token = ?;",
-//     [code],
-//     (err: any, results: any) => {
-//       // if not, return error
-//       if (err) {
-//         console.error(err);
-//         return res.status(401).json({ msg: "invalid code" });
-//       }
-//       if (!results[0]["COUNT(1)"]) {
-//         return res.status(401).json({ msg: "invalid code" });
-//       }
+  // check if there are any codes that match the one given
+  try {
+    const results = emptyOrRows(
+      await query(
+        "SELECT COUNT(1) FROM verificationToken WHERE verificationToken.token = ?;",
+        [code]
+      )
+    );
+    if (!results[0]["COUNT(1)"]) {
+      return res.status(401).json({ msg: "invalid code" });
+    }
 
-//       // update the user record and set user.authLevel = 1
-//       const sqlCommand = `UPDATE user, verificationToken SET user.authLevel = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ? AND user.authLevel = 0; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
-//       pool.query(sqlCommand, [code, code], (err: Error | null, values: any) => {
-//         // I hope this checks for everything
-//         if (err) return res.status(401).json({ msg: "invalid code" });
+    // update the user record and set user.authLevel = 1
+    const sqlCommand = `UPDATE user, verificationToken SET user.authLevel = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ? AND user.authLevel = 0; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
+    try {
+      const values = emptyOrRows(await query(sqlCommand, [code, code]));
 
-//         // delete the verification code
-//         // this is not critical, so we don't check for errors
-//         // the only consequence this could have is spamming the database
-//         pool.execute(
-//           "DELETE FROM verificationToken WHERE verificationToken.token = ?",
-//           [code]
-//         );
+      // delete the verification code
+      // this is not critical, so we don't check for errors
+      // the only consequence this could have is spamming the database
+      query("DELETE FROM verificationToken WHERE verificationToken.token = ?", [
+        code,
+      ]);
 
-//         const userId: number = values[1][0].id;
+      const userId: number = values[1][0].id;
 
-//         pool.query(
-//           "SELECT * FROM user WHERE id = ?",
-//           [userId],
-//           (err: any, users: any[]) => {
-//             if (err) {
-//               console.error(err);
-//               return;
-//             }
+      try {
+        const users = emptyOrRows(
+          await query("SELECT * FROM user WHERE id = ?", [userId])
+        );
+        try {
+          const offers = emptyOrRows(
+            await query(
+              "SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE userId = ? AND subject.id = offer.subjectId",
+              [userId]
+            )
+          );
 
-//             pool.query(
-//               "SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE userId = ? AND subject.id = offer.subjectId",
-//               [userId],
-//               (err: any, offers: any[]) => {
-//                 if (err) {
-//                   console.log(err);
-//                   return;
-//                 }
+          offers.forEach((x) => notifyPeople(transporter, x, users[0]));
 
-//                 offers.forEach((x) => notifyPeople(transporter, x, users[0]));
-//               }
-//             );
-//           }
-//         );
+          const token: string = generateCode(64);
+          addSession(token, values[1][0].id);
 
-//         const token: string = generateCode(64);
-//         addSession(token, values[1][0].id);
+          res.cookie("session-keks", token, {
+            maxAge: 1000 * 60 * 60 * 24 * 30,
+            path: "/",
+            httpOnly: true,
+            sameSite: "none",
+            secure: true,
+          });
 
-//         res.cookie("session-keks", token, {
-//           maxAge: 1000 * 60 * 60 * 24 * 30,
-//           path: "/",
-//           httpOnly: true,
-//           sameSite: "none",
-//           secure: true,
-//         });
+          return res.json({ msg: "account was verified" });
+        } catch (e: any) {
+          console.log(e);
+          return;
+        }
+      } catch (e: any) {
+        // I hope this checks for everything
+        return res.status(401).json({ msg: "invalid code" });
+      }
+    } catch (e: any) {
+      console.error(e);
+      return;
+    }
+  } catch (e: any) {
+    console.error(e);
+    return res.status(401).json({ msg: "invalid code" });
+  }
+};
 
-//         return res.json({ msg: "account was verified" });
-//       });
-//     }
-//   );
-// };
+// send link/one time password to email address
+// app.post("/user/otp", (req: express.Request, res: express.Response) => {
+export const otp = async (req: express.Request, res: express.Response) => {
+  const reqEmail: string = req.body.email;
+  if (!reqEmail) {
+    res.status(400).json({
+      msg: "you have to specify an email-address to log in",
+    });
+    return;
+  }
 
-// // send link/one time password to email address
-// // app.post("/user/otp", (req: express.Request, res: express.Response) => {
-// export const otp = (req: express.Request, res: express.Response) => {
-//   const email: string = req.body.email;
-//   if (!email) {
-//     res.status(400).json({
-//       msg: "you have to specify an email-address to log in",
-//     });
-//     return;
-//   }
+  try {
+    const results = emptyOrRows(
+      await query("SELECT * FROM user WHERE email = ?", [reqEmail])
+    );
 
-//   pool.query(
-//     "SELECT * FROM user WHERE email = ?",
-//     [email],
-//     async (err: any, results: any) => {
-//       if (err) {
-//         console.error(err);
-//         res.status(500).json({ msg: "internal server error" });
-//         return;
-//       }
+    if (results.length < 1) {
+      res.status(400).json({
+        msg: "no user with that email address exists.",
+      });
+      return;
+    }
 
-//       if (results.length < 1) {
-//         res.status(400).json({
-//           msg: "no user with that email address exists.",
-//         });
-//         return;
-//       }
+    const { email, name } = results[0];
 
-//       const { email, name } = results[0];
+    let code = generateCode(32);
+    try {
+      query("INSERT INTO verificationToken (token, userId) VALUES (?, ?)", [
+        code,
+        results[0].id,
+      ]);
+    } catch (e: any) {
+      res.status(500).json({ msg: "internal server error" });
+      return
+    }
 
-//       let code = generateCode(32);
-//       pool.execute(
-//         "INSERT INTO verificationToken (token, userId) VALUES (?, ?)",
-//         [code, results[0].id],
-//         (err) => {
-//           if (err) {
-//             res.status(500).json({ msg: "internal server error" });
-//             return;
-//           }
-//           pool.commit();
-//         }
-//       );
-
-//       await sendOTPEmail(transporter, code, email, name.split(" ")[0]);
-//       res.json({ msg: "email sent" });
-//     }
-//   );
-// };
+    await sendOTPEmail(transporter, code, email, name.split(" ")[0]);
+    res.json({ msg: "email sent" });
+  } catch (e: any) {
+    console.error(e);
+    res.status(500).json({ msg: "internal server error" });
+    return;
+  }
+};
 
 // // app.delete("/user", (req: express.Request, res: express.Response) => {
 // export const deleteMyself = (req: express.Request, res: express.Response) => {
