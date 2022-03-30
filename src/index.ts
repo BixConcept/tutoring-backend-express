@@ -9,11 +9,10 @@ import fs from "fs";
 import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
 import { getUser } from "./auth";
-// import { sendOTPEmail } from "./email";
 import * as offer from "./routes/offer";
 import * as request from "./routes/request";
 import * as stats from "./routes/stats";
-// import * as subject from "./routes/subject";
+import * as subject from "./routes/subject";
 import * as user from "./routes/user";
 
 export const app = express();
@@ -180,6 +179,6 @@ app.post("/request", request.postRequest);
 app.get("/requests", request.getRequests);
 
 // subject
-// app.get("/subjects", subject.getSubjects);
+app.get("/subjects", subject.getSubjects);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT} 🐹🐹`));
