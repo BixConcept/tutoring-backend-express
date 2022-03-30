@@ -142,51 +142,44 @@ export const createOffer = async (
   }
 };
 
-// export const deleteOffer = (req: express.Request, res: express.Response) => {
-//   if (!req.user) {
-//     return res.status(401).json({ msg: "unauthorized" });
-//   }
+export const deleteOffer = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
 
-//   let offerId = req.params.id;
-//   if (!offerId) {
-//     return res.status(400).json({ msg: "No offer id was specified" });
-//   }
+  let offerId = req.params.id;
+  if (!offerId) {
+    return res.status(400).json({ msg: "No offer id was specified" });
+  }
 
-//   pool.query(
-//     "SELECT * FROM offer WHERE id = ?",
-//     [offerId],
-//     (err: any, results: any[]) => {
-//       if (err) {
-//         console.error(err);
-//         return res.status(500).json({ msg: "internal server error" });
-//       }
+  try {
+    const results = emptyOrRows(
+      await query("SELECT * FROM offer WHERE id = ?", [offerId])
+    );
 
-//       if (results.length === 0) {
-//         return res
-//           .status(404)
-//           .json({ msg: "the specified offer was not found" });
-//       }
+    if (results.length === 0) {
+      return res.status(404).json({ msg: "the specified offer was not found" });
+    }
 
-//       if (
-//         results[0].userId !== req.user?.id &&
-//         req.user?.authLevel !== AuthLevel.Admin
-//       ) {
-//         return res.status(403).json({
-//           msg: "you are not the owner of that offer (and not cool enough to delete it anyways)",
-//         });
-//       }
+    if (
+      results[0].userId !== req.user?.id &&
+      req.user?.authLevel !== AuthLevel.Admin
+    ) {
+      return res.status(403).json({
+        msg: "you are not the owner of that offer (and not cool enough to delete it anyways)",
+      });
+    }
 
-//       pool.execute("DELETE FROM offer WHERE id = ?", [offerId], (err) => {
-//         if (err) {
-//           console.error(err);
-//           return res.status(500).json({ msg: "internal server error" });
-//         }
-
-//         return res.status(200).json({ msg: "successful" });
-//       });
-//     }
-//   );
-// };
+    await query("DELETE FROM offer WHERE id = ?", [offerId]);
+    return res.status(200).json({ msg: "successful" });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(500).json({ msg: "internal server error" });
+  }
+};
 
 // export const getOfferById = (req: express.Request, res: express.Response) => {
 //   const id = parseInt(req.params.id);
