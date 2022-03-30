@@ -459,26 +459,26 @@ export const getUserById = async (
   }
 };
 
-// export const emailAvailable = (req: express.Request, res: express.Response) => {
-//   const email = req.params.email;
-//   if (!email) {
-//     res.status(400).json({ msg: "you have to provide an email address" });
-//   }
+export const emailAvailable = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const email = req.params.email;
+  if (!email) {
+    res.status(400).json({ msg: "you have to provide an email address" });
+  }
 
-//   pool.query(
-//     "SELECT 1 FROM user WHERE email = ?",
-//     [email],
-//     (err: any, results: any) => {
-//       if (err) {
-//         console.error(err);
-//         return res.status(500).json({ msg: "internal server error" });
-//       }
-
-//       if (results.length === 0) {
-//         return res.json({ msg: "available" });
-//       } else {
-//         return res.status(409).json({ msg: "taken" });
-//       }
-//     }
-//   );
-// };
+  try {
+    const results = emptyOrRows(
+      await query("SELECT 1 FROM user WHERE email = ?", [email])
+    );
+    if (results.length === 0) {
+      return res.json({ msg: "available" });
+    } else {
+      return res.status(409).json({ msg: "taken" });
+    }
+  } catch (e: any) {
+    console.error(e);
+    return res.status(500).json({ msg: "internal server error" });
+  }
+};
