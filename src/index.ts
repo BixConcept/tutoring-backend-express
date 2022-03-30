@@ -14,7 +14,7 @@ import { getUser } from "./auth";
 // import * as request from "./routes/request";
 // import * as stats from "./routes/stats";
 // import * as subject from "./routes/subject";
-// import * as user from "./routes/user";
+import * as user from "./routes/user";
 
 export const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -47,6 +47,14 @@ export const query = async (statement: string, params?: any) => {
   const [results] = await connection.query(statement, params);
   connection.commit();
   return results;
+};
+
+export const emptyOrRows = (rows: any): any[] => {
+  if (!rows) {
+    return [];
+  }
+
+  return rows;
 };
 
 app.set("trust proxy", "::ffff:172.24.0.1");
@@ -116,21 +124,19 @@ fs.readFile(
     if (err) return console.error(err);
     let statements = data.toString().split(";");
 
-    statements.forEach(
-      async (command) => {
-        try {
-          await query(command);
-        } catch (err: any) {
-          if (
-            err &&
-            err.code !== "ER_EMPTY_QUERY" &&
-            err.code !== "ER_DUP_ENTRY"
-          ) {
-            console.error(err);
-          }
+    statements.forEach(async (command) => {
+      try {
+        await query(command);
+      } catch (err: any) {
+        if (
+          err &&
+          err.code !== "ER_EMPTY_QUERY" &&
+          err.code !== "ER_DUP_ENTRY"
+        ) {
+          console.error(err);
         }
       }
-    );
+    });
   }
 );
 
@@ -148,7 +154,7 @@ app.get("/", (_: express.Request, res: express.Response) => {
 // app.get("/stats", stats.getStats);
 
 // // user
-// app.get("/user", user.getUser);
+app.get("/user", user.getUser);
 // app.put("/user", user.putUser);
 // app.get("/users", user.getUsers);
 // app.post("/user/register", user.register);

@@ -2,7 +2,7 @@ import fs from "fs";
 import Handlebars from "handlebars";
 import { SentMessageInfo } from "nodemailer/lib/smtp-connection";
 import { MailOptions } from "nodemailer/lib/smtp-transport";
-import { pool } from ".";
+import { emptyOrRows, query } from ".";
 import { Offer, User } from "./models";
 
 // send a verification email
@@ -74,48 +74,49 @@ export async function notifyPeople(
   offer: Offer,
   tutor: User
 ) {
-  pool.query(
-    "SELECT * FROM request WHERE subjectId = ? AND grade <= ?",
-    [offer.subjectId, offer.maxGrade],
-    (err: any, results: any[]) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-
-      fs.readFile("./src/emails/notification_email.html", (err, data) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
-
-        const template = Handlebars.compile(data.toString().replace("\n", ""));
-
-        results.forEach(async (request) => {
-          const mailOptions: MailOptions = {
-            from: process.env.EMAIL_USER,
-            to: request.email,
-            subject: "Benachrichting Nachhilfe GymHaan",
-            html: template({
-              offer,
-              request,
-              tutor,
-            }),
-            headers: { "Content-Type": "text/html" },
-          };
-
-          await transporter.sendMail(
-            mailOptions,
-            (err: Error | null, info: SentMessageInfo) => {
-              if (err) {
-                console.log(info, err);
-              }
-            }
-          );
-
-          pool.execute("DELETE FROM request WHERE id = ?", [request.id]);
-        });
-      });
+  let results: any[];
+  try {
+    results = emptyOrRows(
+      await query("SELECT * FROM request WHERE subjectId = ? AND grade <= ?", [
+        offer.subjectId,
+        offer.maxGrade,
+      ])
+    );
+  } catch (e: any) {
+    console.error(e);
+    return;
+  }
+  fs.readFile("./src/emails/notification_email.html", (err, data) => {
+    if (err) {
+      console.error(err);
+      return;
     }
-  );
+
+    const template = Handlebars.compile(data.toString().replace("\n", ""));
+
+    results.forEach(async (request) => {
+      const mailOptions: MailOptions = {
+        from: process.env.EMAIL_USER,
+        to: request.email,
+        subject: "Benachrichting Nachhilfe GymHaan",
+        html: template({
+          offer,
+          request,
+          tutor,
+        }),
+        headers: { "Content-Type": "text/html" },
+      };
+
+      await transporter.sendMail(
+        mailOptions,
+        (err: Error | null, info: SentMessageInfo) => {
+          if (err) {
+            console.log(info, err);
+          }
+        }
+      );
+
+      query("DELETE FROM request WHERE id = ?", [request.id]);
+    });
+  });
 }
