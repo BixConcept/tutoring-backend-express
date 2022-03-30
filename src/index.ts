@@ -158,7 +158,7 @@ app.get("/user", user.getUser);
 app.put("/user", user.putUser);
 app.put("/user/:id", user.putUser);
 app.get("/users", user.getUsers);
-// app.post("/user/register", user.register);
+app.post("/user/register", user.register);
 // app.post("/user/logout", user.logout);
 app.get("/user/verify", user.verify);
 app.post("/user/otp", user.otp);
