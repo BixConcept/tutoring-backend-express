@@ -181,25 +181,26 @@ export const deleteOffer = async (
   }
 };
 
-// export const getOfferById = (req: express.Request, res: express.Response) => {
-//   const id = parseInt(req.params.id);
-//   if (!id) {
-//     return res.status(400).json({ msg: "You have to provide an id" });
-//   }
-//   pool.query(
-//     "SELECT * FROM offer where id = ?",
-//     [id],
-//     (err: any, result: any) => {
-//       if (err) {
-//         console.error(err);
-//         return res.status(500).json({ msg: "internal server error" });
-//       }
-//       if (result.length === 0) {
-//         return res
-//           .status(404)
-//           .json({ msg: `user with id ${id} does not exist` });
-//       }
-//       return res.json({ content: result });
-//     }
-//   );
-// };
+export const getOfferById = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const id = parseInt(req.params.id);
+  if (!id) {
+    return res.status(400).json({ msg: "You have to provide an id" });
+  }
+  try {
+    const result = emptyOrRows(
+      await query("SELECT * FROM offer where id = ?", [id])
+    );
+    if (result.length === 0) {
+      return res
+        .status(404)
+        .json({ msg: `offer with id ${id} does not exist` });
+    }
+    return res.json({ content: result });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(500).json({ msg: "internal server error" });
+  }
+};

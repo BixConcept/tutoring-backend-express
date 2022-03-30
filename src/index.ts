@@ -173,7 +173,7 @@ app.post("/find", offer.find);
 app.get("/offers", offer.getOffers);
 app.post("/offer", offer.createOffer);
 app.delete("/offer/:id(\\d+)", offer.deleteOffer);
-// app.get("/offer/:id(\\d+)", offer.getOfferById);
+app.get("/offer/:id(\\d+)", offer.getOfferById);
 
 // // request
 // app.post("/request", request.postRequest);
