@@ -26,7 +26,7 @@ export const getApiRequests = (req: express.Request, res: express.Response) => {
         // example values: 3600 (one hour in seconds) - 86400 (one day in seconds) - whatever, you get the system
         if (req.query.aggregate && typeof req.query.aggregate === "string") {
           // convert to milliseconds
-          const interval = parseInt(req.query.aggregate) * 1000;
+          const interval = Math.min(parseInt(req.query.aggregate) * 1000, 1800);
           if (isNaN(interval)) {
             return res
               .status(400)
