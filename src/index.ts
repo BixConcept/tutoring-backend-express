@@ -163,7 +163,7 @@ app.post("/user/logout", user.logout);
 app.get("/user/verify", user.verify);
 app.post("/user/otp", user.otp);
 app.delete("/user", user.deleteMyself);
-// app.delete("/user/:id(\\d+)", user.deleteUser);
+app.delete("/user/:id(\\d+)", user.deleteUser);
 // app.get("/user/:id(\\d+)", user.getUserById);
 // app.get("/user/email-available/:email", user.emailAvailable);
 

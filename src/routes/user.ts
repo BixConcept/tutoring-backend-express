@@ -265,30 +265,34 @@ export const deleteMyself = async (
   }
 };
 
-// export const deleteUser = (req: express.Request, res: express.Response) => {
-//   if (!req.user) {
-//     return res.status(401).json({ msg: "not authenticated" });
-//   }
-//   if (req.user.authLevel !== AuthLevel.Admin) {
-//     return res.status(403).json({ msg: "forbidden" });
-//   }
+export const deleteUser = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: "not authenticated" });
+  }
+  if (req.user.authLevel !== AuthLevel.Admin) {
+    return res.status(403).json({ msg: "forbidden" });
+  }
 
-//   let userId = req.params.id;
-//   if (!userId) {
-//     return res.status(400).json({ msg: "no user id specified" });
-//   }
+  let userId = req.params.id;
+  if (!userId) {
+    return res.status(400).json({ msg: "no user id specified" });
+  }
 
-//   pool.execute("DELETE FROM user WHERE id = ?", [userId], (err) => {
-//     if (err) {
-//       console.error(err);
-//       res.status(500).json({ msg: "internal server error" });
-//       return;
-//     }
-//     pool.commit();
-
-//     return res.json({ msg: "success" });
-//   });
-// };
+  try {
+    const rows: any = await query("DELETE FROM user WHERE id = ?", [userId]);
+    if (rows.affectedRows === 0) {
+      return res.status(404).json({ msg: "specified user does not exist" });
+    }
+    return res.json({ msg: "success" });
+  } catch (e: any) {
+    console.error(e);
+    res.status(500).json({ msg: "internal server error" });
+    return;
+  }
+};
 
 export const getUser = (req: express.Request, res: express.Response) => {
   if (req.user) {
