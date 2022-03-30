@@ -246,23 +246,24 @@ export const otp = async (req: express.Request, res: express.Response) => {
   }
 };
 
-// // app.delete("/user", (req: express.Request, res: express.Response) => {
-// export const deleteMyself = (req: express.Request, res: express.Response) => {
-//   if (req.user) {
-//     pool.execute("DELETE FROM user WHERE id = ?", [req.user.id], (err) => {
-//       if (err) {
-//         console.error(err);
-//         res.status(500).json({ msg: "internal server error" });
-//         return;
-//       }
-//       pool.commit();
-
-//       return res.json({ msg: "success" });
-//     });
-//   } else {
-//     return res.status(401).json({ msg: "not authenticated" });
-//   }
-// };
+// app.delete("/user", (req: express.Request, res: express.Response) => {
+export const deleteMyself = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  if (req.user) {
+    try {
+      await query("DELETE FROM user WHERE id = ?", [req.user.id]);
+      return res.json({ msg: "success" });
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ msg: "internal server error" });
+      return;
+    }
+  } else {
+    return res.status(401).json({ msg: "not authenticated" });
+  }
+};
 
 // export const deleteUser = (req: express.Request, res: express.Response) => {
 //   if (!req.user) {
