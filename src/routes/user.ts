@@ -234,7 +234,7 @@ export const otp = async (req: express.Request, res: express.Response) => {
       ]);
     } catch (e: any) {
       res.status(500).json({ msg: "internal server error" });
-      return
+      return;
     }
 
     await sendOTPEmail(transporter, code, email, name.split(" ")[0]);
@@ -297,104 +297,99 @@ export const getUser = (req: express.Request, res: express.Response) => {
   }
 };
 
-// export const putUser = (req: express.Request, res: express.Response) => {
-//   if (req.user) {
-//     const changes = req.body;
-//     changes.createdAt = new Date(changes.createdAt);
-//     changes.updatedAt = new Date(changes.updatedAt);
+export const putUser = async (req: express.Request, res: express.Response) => {
+  if (req.user) {
+    const changes = req.body;
+    changes.createdAt = new Date(changes.createdAt);
+    changes.updatedAt = new Date(changes.updatedAt);
 
-//     let oldUser: User = req.user;
+    let oldUser: User = req.user;
 
-//     if (req.user.authLevel != AuthLevel.Admin) {
-//       // list of attributes we don't allow the user to change
-//       const unchangeables: string[] = ["id", "authLevel"];
+    if (req.user.authLevel != AuthLevel.Admin) {
+      // list of attributes we don't allow the user to change
+      const unchangeables: string[] = ["id", "authLevel"];
 
-//       // list of attributes the user tried to change but isn't allowed to
-//       let errors: string[] = [];
+      // list of attributes the user tried to change but isn't allowed to
+      let errors: string[] = [];
 
-//       Object.keys(changes).forEach((change: string) => {
-//         // if the proposed change is inside the list of unchangeables
-//         if ((oldUser as any)[change] instanceof Date) {
-//           if (
-//             unchangeables.indexOf(change) > -1 &&
-//             changes[change].getTime() !== (oldUser as any)[change].getTime()
-//           ) {
-//             errors.push(change);
-//           }
-//         } else if (
-//           unchangeables.indexOf(change) > -1 &&
-//           changes[change] !== (oldUser as any)[change] // check if it is still the same
-//         ) {
-//           errors.push(change);
-//         }
-//       });
+      Object.keys(changes).forEach((change: string) => {
+        // if the proposed change is inside the list of unchangeables
+        if ((oldUser as any)[change] instanceof Date) {
+          if (
+            unchangeables.indexOf(change) > -1 &&
+            changes[change].getTime() !== (oldUser as any)[change].getTime()
+          ) {
+            errors.push(change);
+          }
+        } else if (
+          unchangeables.indexOf(change) > -1 &&
+          changes[change] !== (oldUser as any)[change] // check if it is still the same
+        ) {
+          errors.push(change);
+        }
+      });
 
-//       if (errors.length > 0) {
-//         return res.status(400).json({
-//           msg: "you are not allowed to change the following attributes",
-//           errors,
-//         });
-//       }
-//     } else {
-//       const { id } = req.params;
-//       if (id) {
-//         pool.query(
-//           "SELECT * FROM user WHERE id = ?",
-//           [id],
-//           (err: mysql.QueryError | null, result: any) => {
-//             if (err) {
-//               console.error(err);
-//               res.status(500).json({
-//                 msg: "internal serer error",
-//               });
-//               return;
-//             }
+      if (errors.length > 0) {
+        return res.status(400).json({
+          msg: "you are not allowed to change the following attributes",
+          errors,
+        });
+      }
+    } else {
+      const { id } = req.params;
+      if (id) {
+        try {
+          const results = emptyOrRows(
+            await query("SELECT * FROM user WHERE id = ?", [id])
+          );
+          if (results.length === 0) {
+            return res.status(404).json({
+              msg: "the specified user does not exist",
+            });
+          }
 
-//             if (result.length === 0) {
-//               return res.status(404).json({
-//                 msg: "the specified user does not exist",
-//               });
-//             }
+          oldUser = results[0];
+        } catch (e: any) {
+          console.error(e);
+          res.status(500).json({
+            msg: "internal server error",
+          });
+          return;
+        }
+      }
+    }
 
-//             oldUser = result[0];
-//           }
-//         );
-//       }
-//     }
+    // this merges the things
+    let updated = { ...oldUser, ...changes };
+    console.log(updated);
 
-//     // this merges the things
-//     let updated = { ...oldUser, ...changes };
-//     console.log(updated);
-
-//     pool.query(
-//       "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, authLevel = ?, misc = ?, hasSignal = ?, hasWhatsapp = ?, hasDiscord = ?, discordUser = ? WHERE id = ?",
-//       [
-//         updated.id,
-//         updated.email,
-//         updated.name,
-//         updated.phoneNumber,
-//         updated.grade,
-//         updated.authLevel,
-//         updated.misc === undefined ? null : updated.misc,
-//         updated.hasSignal,
-//         updated.hasWhatsapp,
-//         updated.hasDiscord,
-//         updated.discordUser,
-//         updated.id,
-//       ],
-//       (err) => {
-//         if (err) {
-//           console.error(err);
-//           return res.status(500).json({ msg: "internal server error" });
-//         }
-//         pool.commit();
-//         return res.json({ msg: "successful" });
-//       }
-//     );
-//   } else {
-//     return res.status(401).json({ msg: "unauthorized" });
-//   }
-// };
+    try {
+      query(
+        "UPDATE user SET id = ?, email = ?, name = ?, phoneNumber = ?, grade = ?, authLevel = ?, misc = ?, hasSignal = ?, hasWhatsapp = ?, hasDiscord = ?, discordUser = ? WHERE id = ?",
+        [
+          updated.id,
+          updated.email,
+          updated.name,
+          updated.phoneNumber,
+          updated.grade,
+          updated.authLevel,
+          updated.misc === undefined ? null : updated.misc,
+          updated.hasSignal,
+          updated.hasWhatsapp,
+          updated.hasDiscord,
+          updated.discordUser,
+          updated.id,
+        ]
+      );
+      return res.json({ msg: "successful" });
+    } catch (e: any) {
+      console.error(e);
+      return res.status(500).json({ msg: "internal server error" });
+    }
+  } else {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+};
 
 // export const logout = (req: express.Request, res: express.Response) => {
 //   const cookie = req.cookies["session-keks"];

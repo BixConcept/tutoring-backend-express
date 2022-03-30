@@ -155,7 +155,8 @@ app.get("/", (_: express.Request, res: express.Response) => {
 
 // // user
 app.get("/user", user.getUser);
-// app.put("/user", user.putUser);
+app.put("/user", user.putUser);
+app.put("/user/:id", user.putUser);
 // app.get("/users", user.getUsers);
 // app.post("/user/register", user.register);
 // app.post("/user/logout", user.logout);
