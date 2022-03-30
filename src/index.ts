@@ -11,7 +11,7 @@ import nodemailer from "nodemailer";
 import { getUser } from "./auth";
 // import { sendOTPEmail } from "./email";
 import * as offer from "./routes/offer";
-// import * as request from "./routes/request";
+import * as request from "./routes/request";
 import * as stats from "./routes/stats";
 // import * as subject from "./routes/subject";
 import * as user from "./routes/user";
@@ -176,8 +176,8 @@ app.delete("/offer/:id(\\d+)", offer.deleteOffer);
 app.get("/offer/:id(\\d+)", offer.getOfferById);
 
 // // request
-// app.post("/request", request.postRequest);
-// app.get("/requests", request.getRequests);
+app.post("/request", request.postRequest);
+app.get("/requests", request.getRequests);
 
 // subject
 // app.get("/subjects", subject.getSubjects);
