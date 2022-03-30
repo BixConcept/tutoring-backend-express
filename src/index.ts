@@ -24,7 +24,7 @@ const logger = async (req: express.Request, _: any, next: any) => {
   console.log(
     `${req.method} ${req.path} ${
       req.user === undefined ? 0 : req.user.authLevel
-    } ${req.ip}`
+    } ${req.ip} ${req.user ? req.user.email + "#" + req.user.id : ""}`
   );
   try {
     await query(
@@ -157,7 +157,7 @@ app.get("/", (_: express.Request, res: express.Response) => {
 app.get("/user", user.getUser);
 app.put("/user", user.putUser);
 app.put("/user/:id", user.putUser);
-// app.get("/users", user.getUsers);
+app.get("/users", user.getUsers);
 // app.post("/user/register", user.register);
 // app.post("/user/logout", user.logout);
 app.get("/user/verify", user.verify);

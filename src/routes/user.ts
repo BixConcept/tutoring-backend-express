@@ -407,28 +407,27 @@ export const putUser = async (req: express.Request, res: express.Response) => {
 //   return res.status(204);
 // };
 
-// export const getUsers = (req: express.Request, res: express.Response) => {
-//   if (!req.user) {
-//     return res.status(401).json({ msg: "unauthorized" });
-//   }
-//   if (req.user.authLevel >= AuthLevel.Verified) {
-//     pool.query("SELECT * FROM user", async (err: any, results: User[]) => {
-//       if (err) {
-//         console.error(err);
-//         return res.status(500).json({ msg: "internal server error" });
-//       }
+export const getUsers = async (req: express.Request, res: express.Response) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+  if (req.user.authLevel >= AuthLevel.Verified) {
+    try {
+      const users = emptyOrRows(await query("SELECT * FROM user"));
+      const asdf = users.map(async (x) => {
+        return { ...x, ...{ offers: await getOffers(x.id) } };
+      });
+      const resolved = await Promise.all(asdf);
 
-//       const asdf = results.map(async (x) => {
-//         return { ...x, ...{ offers: await getOffers(x.id) } };
-//       });
-//       const resolved = await Promise.all(asdf);
-
-//       return res.json({ content: resolved });
-//     });
-//   } else {
-//     return res.status(403).json({ msg: "forbidden" });
-//   }
-// };
+      return res.json({ content: resolved });
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ msg: "internal server error" });
+    }
+  } else {
+    return res.status(403).json({ msg: "forbidden" });
+  }
+};
 
 // export const getUserById = (req: express.Request, res: express.Response) => {
 //   const id = parseInt(req.params.id);

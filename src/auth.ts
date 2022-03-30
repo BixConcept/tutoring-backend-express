@@ -19,8 +19,6 @@ export const getUser = async (
     return;
   }
 
-  console.log(results);
-
   if (results && results.length > 0) {
     req.user = results[0];
     delete req.user.passwordHash;
