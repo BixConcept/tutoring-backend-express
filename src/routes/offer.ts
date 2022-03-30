@@ -1,15 +1,15 @@
-import { emailToName, pool, transporter } from "../index";
+import { query, emptyOrRows, transporter } from "../index";
 import express from "express";
 import { AuthLevel, Offer } from "../models";
 import { notifyPeople } from "../email";
 
 // list matching offers
 // app.post("/find", (req: express.Request, res: express.Response) => {
-export const find = (req: express.Request, res: express.Response) => {
+export const find = async (req: express.Request, res: express.Response) => {
   const subjectId: number = req.body.subjectId;
   const grade: number = req.body.grade;
 
-  const query: string = `-- sql
+  const statement: string = `-- sql
     SELECT
         user.id AS userId,
         offer.id AS offerId,
@@ -36,7 +36,6 @@ export const find = (req: express.Request, res: express.Response) => {
 
   // TODO: return as seperate objects (instead of user_id -> user: {id:})
 
-  console.log(req.user);
   if (!req.user) {
     return res.status(401).json({ msg: "unauthorized" });
   }
@@ -46,162 +45,162 @@ export const find = (req: express.Request, res: express.Response) => {
       .json({ msg: "you have to verify your email before continuing" });
   }
 
-  pool.query(query, [subjectId, grade], (err: any, results: any) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ msg: "internal server error" });
-    }
+  try {
+    const results = await query(statement, [subjectId, grade]);
     return res.json({ content: results });
-  });
-};
-
-// app.get("/offers", (req: express.Request, res: express.Response) => {
-export const getOffers = (req: express.Request, res: express.Response) => {
-  if (!req.user) {
-    return res.status(401).json({ msg: "unauthorized" });
-  }
-  if (req.user.authLevel >= AuthLevel.Verified) {
-    pool.query(
-      "SELECT offer.*, subject.name as subjectName FROM offer, subject WHERE subject.id = offer.subjectId",
-      (err: any, results: Offer[]) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ msg: "internal server error" });
-        }
-        return res.json({ content: results });
-      }
-    );
-  } else {
-    return res.status(403).json({ msg: "forbidden" });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(500).json({ msg: "internal server error" });
   }
 };
 
-export const createOffer = (req: express.Request, res: express.Response) => {
-  if (req.user === undefined) {
-    return res.status(401).json({ msg: "unauthorized" });
-  } else {
-    let subjectId: number = req.body.subjectId;
-    let maxGrade: number = req.body.maxGrade;
+// // app.get("/offers", (req: express.Request, res: express.Response) => {
+// export const getOffers = (req: express.Request, res: express.Response) => {
+//   if (!req.user) {
+//     return res.status(401).json({ msg: "unauthorized" });
+//   }
+//   if (req.user.authLevel >= AuthLevel.Verified) {
+//     pool.query(
+//       "SELECT offer.*, subject.name as subjectName FROM offer, subject WHERE subject.id = offer.subjectId",
+//       (err: any, results: Offer[]) => {
+//         if (err) {
+//           console.error(err);
+//           return res.status(500).json({ msg: "internal server error" });
+//         }
+//         return res.json({ content: results });
+//       }
+//     );
+//   } else {
+//     return res.status(403).json({ msg: "forbidden" });
+//   }
+// };
 
-    if (maxGrade < 5 || maxGrade > 13) {
-      return res.status(400).json({
-        msg: "Grade out of bounds",
-      });
-    }
+// export const createOffer = (req: express.Request, res: express.Response) => {
+//   if (req.user === undefined) {
+//     return res.status(401).json({ msg: "unauthorized" });
+//   } else {
+//     let subjectId: number = req.body.subjectId;
+//     let maxGrade: number = req.body.maxGrade;
 
-    pool.query(
-      "SELECT COUNT(1) FROM subject WHERE id = ?",
-      [subjectId],
-      (err: any, results: any[]) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ msg: "internal server error" });
-        }
+//     if (maxGrade < 5 || maxGrade > 13) {
+//       return res.status(400).json({
+//         msg: "Grade out of bounds",
+//       });
+//     }
 
-        if (results.length === 0) {
-          return res.status(400).json({ msg: "invalid subject" });
-        }
+//     pool.query(
+//       "SELECT COUNT(1) FROM subject WHERE id = ?",
+//       [subjectId],
+//       (err: any, results: any[]) => {
+//         if (err) {
+//           console.error(err);
+//           return res.status(500).json({ msg: "internal server error" });
+//         }
 
-        // TODO: check for duplicate subjects per user
-        pool.query(
-          `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();`,
-          [req.user?.id, subjectId, maxGrade],
-          (err: any, results: any[]) => {
-            if (err) {
-              console.error(err);
-              return res.status(500).json({ msg: "internal server error" });
-            }
+//         if (results.length === 0) {
+//           return res.status(400).json({ msg: "invalid subject" });
+//         }
 
-            let offerId = results[0].insertId;
+//         // TODO: check for duplicate subjects per user
+//         pool.query(
+//           `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();`,
+//           [req.user?.id, subjectId, maxGrade],
+//           (err: any, results: any[]) => {
+//             if (err) {
+//               console.error(err);
+//               return res.status(500).json({ msg: "internal server error" });
+//             }
 
-            pool.query(
-              `SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE subject.id = offer.subjectId AND offer.id = ?`,
-              [offerId],
-              (err: any, results: any[]) => {
-                if (err) {
-                  console.error(err);
-                  return res.status(500).json({ msg: "internal server error" });
-                }
+//             let offerId = results[0].insertId;
 
-                if (req.user) {
-                  notifyPeople(transporter, results[0], req.user);
-                }
+//             pool.query(
+//               `SELECT offer.*, subject.name AS subjectName FROM offer, subject WHERE subject.id = offer.subjectId AND offer.id = ?`,
+//               [offerId],
+//               (err: any, results: any[]) => {
+//                 if (err) {
+//                   console.error(err);
+//                   return res.status(500).json({ msg: "internal server error" });
+//                 }
 
-                return res.json({ content: results[0] });
-              }
-            );
-          }
-        );
-      }
-    );
-  }
-};
+//                 if (req.user) {
+//                   notifyPeople(transporter, results[0], req.user);
+//                 }
 
-export const deleteOffer = (req: express.Request, res: express.Response) => {
-  if (!req.user) {
-    return res.status(401).json({ msg: "unauthorized" });
-  }
+//                 return res.json({ content: results[0] });
+//               }
+//             );
+//           }
+//         );
+//       }
+//     );
+//   }
+// };
 
-  let offerId = req.params.id;
-  if (!offerId) {
-    return res.status(400).json({ msg: "No offer id was specified" });
-  }
+// export const deleteOffer = (req: express.Request, res: express.Response) => {
+//   if (!req.user) {
+//     return res.status(401).json({ msg: "unauthorized" });
+//   }
 
-  pool.query(
-    "SELECT * FROM offer WHERE id = ?",
-    [offerId],
-    (err: any, results: any[]) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ msg: "internal server error" });
-      }
+//   let offerId = req.params.id;
+//   if (!offerId) {
+//     return res.status(400).json({ msg: "No offer id was specified" });
+//   }
 
-      if (results.length === 0) {
-        return res
-          .status(404)
-          .json({ msg: "the specified offer was not found" });
-      }
+//   pool.query(
+//     "SELECT * FROM offer WHERE id = ?",
+//     [offerId],
+//     (err: any, results: any[]) => {
+//       if (err) {
+//         console.error(err);
+//         return res.status(500).json({ msg: "internal server error" });
+//       }
 
-      if (
-        results[0].userId !== req.user?.id &&
-        req.user?.authLevel !== AuthLevel.Admin
-      ) {
-        return res.status(403).json({
-          msg: "you are not the owner of that offer (and not cool enough to delete it anyways)",
-        });
-      }
+//       if (results.length === 0) {
+//         return res
+//           .status(404)
+//           .json({ msg: "the specified offer was not found" });
+//       }
 
-      pool.execute("DELETE FROM offer WHERE id = ?", [offerId], (err) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ msg: "internal server error" });
-        }
+//       if (
+//         results[0].userId !== req.user?.id &&
+//         req.user?.authLevel !== AuthLevel.Admin
+//       ) {
+//         return res.status(403).json({
+//           msg: "you are not the owner of that offer (and not cool enough to delete it anyways)",
+//         });
+//       }
 
-        return res.status(200).json({ msg: "successful" });
-      });
-    }
-  );
-};
+//       pool.execute("DELETE FROM offer WHERE id = ?", [offerId], (err) => {
+//         if (err) {
+//           console.error(err);
+//           return res.status(500).json({ msg: "internal server error" });
+//         }
 
-export const getOfferById = (req: express.Request, res: express.Response) => {
-  const id = parseInt(req.params.id);
-  if (!id) {
-    return res.status(400).json({ msg: "You have to provide an id" });
-  }
-  pool.query(
-    "SELECT * FROM offer where id = ?",
-    [id],
-    (err: any, result: any) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ msg: "internal server error" });
-      }
-      if (result.length === 0) {
-        return res
-          .status(404)
-          .json({ msg: `user with id ${id} does not exist` });
-      }
-      return res.json({ content: result });
-    }
-  );
-};
+//         return res.status(200).json({ msg: "successful" });
+//       });
+//     }
+//   );
+// };
+
+// export const getOfferById = (req: express.Request, res: express.Response) => {
+//   const id = parseInt(req.params.id);
+//   if (!id) {
+//     return res.status(400).json({ msg: "You have to provide an id" });
+//   }
+//   pool.query(
+//     "SELECT * FROM offer where id = ?",
+//     [id],
+//     (err: any, result: any) => {
+//       if (err) {
+//         console.error(err);
+//         return res.status(500).json({ msg: "internal server error" });
+//       }
+//       if (result.length === 0) {
+//         return res
+//           .status(404)
+//           .json({ msg: `user with id ${id} does not exist` });
+//       }
+//       return res.json({ content: result });
+//     }
+//   );
+// };

@@ -10,7 +10,7 @@ import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
 import { getUser } from "./auth";
 // import { sendOTPEmail } from "./email";
-// import * as offer from "./routes/offer";
+import * as offer from "./routes/offer";
 // import * as request from "./routes/request";
 import * as stats from "./routes/stats";
 // import * as subject from "./routes/subject";
@@ -46,6 +46,7 @@ export const query = async (statement: string, params?: any) => {
   const connection = await mysql.createConnection(config);
   const [results] = await connection.query(statement, params);
   connection.commit();
+
   return results;
 };
 
@@ -168,7 +169,7 @@ app.get("/user/:id(\\d+)", user.getUserById);
 app.get("/user/email-available/:email", user.emailAvailable);
 
 // // offer
-// app.post("/find", offer.find);
+app.post("/find", offer.find);
 // app.get("/offers", offer.getOffers);
 // app.post("/offer", offer.createOffer);
 // app.delete("/offer/:id(\\d+)", offer.deleteOffer);
