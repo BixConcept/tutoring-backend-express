@@ -54,26 +54,30 @@ export const find = async (req: express.Request, res: express.Response) => {
   }
 };
 
-// // app.get("/offers", (req: express.Request, res: express.Response) => {
-// export const getOffers = (req: express.Request, res: express.Response) => {
-//   if (!req.user) {
-//     return res.status(401).json({ msg: "unauthorized" });
-//   }
-//   if (req.user.authLevel >= AuthLevel.Verified) {
-//     pool.query(
-//       "SELECT offer.*, subject.name as subjectName FROM offer, subject WHERE subject.id = offer.subjectId",
-//       (err: any, results: Offer[]) => {
-//         if (err) {
-//           console.error(err);
-//           return res.status(500).json({ msg: "internal server error" });
-//         }
-//         return res.json({ content: results });
-//       }
-//     );
-//   } else {
-//     return res.status(403).json({ msg: "forbidden" });
-//   }
-// };
+// app.get("/offers", (req: express.Request, res: express.Response) => {
+export const getOffers = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+  if (req.user.authLevel >= AuthLevel.Verified) {
+    try {
+      const results = emptyOrRows(
+        await query(
+          "SELECT offer.*, subject.name as subjectName FROM offer, subject WHERE subject.id = offer.subjectId"
+        )
+      );
+      return res.json({ content: results });
+    } catch (e: any) {
+      console.error(e);
+      return res.status(500).json({ msg: "internal server error" });
+    }
+  } else {
+    return res.status(403).json({ msg: "forbidden" });
+  }
+};
 
 // export const createOffer = (req: express.Request, res: express.Response) => {
 //   if (req.user === undefined) {
