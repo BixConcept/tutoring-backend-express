@@ -294,6 +294,15 @@ export const deleteUser = async (
   }
 };
 
+export const deleteUnverified = async (req: express.Request, res: express.Response) => {
+  if (req.user?.authLevel !== AuthLevel.Admin) {
+    return res.status(403).json({msg: "Forbidden"})
+  }
+  const rows: any = await query("DELETE FROM user WHERE authLevel = ?", [AuthLevel.Unverified])
+
+  return res.status(200).json({affectedRows: rows.affectedRows})
+}
+
 export const getUser = (req: express.Request, res: express.Response) => {
   if (req.user) {
     return res.json({ content: req.user });
