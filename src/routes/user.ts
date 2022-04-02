@@ -302,10 +302,18 @@ export const deleteUnverified = async (
   if (req.user?.authLevel !== AuthLevel.Admin) {
     return res.status(403).json({ msg: "Forbidden" });
   }
-  if (req.query.olderThan && typeof req.query.olderThan === "string") {
-    const date: Date = new Date(
-      new Date().getTime() - parseInt(req.query.olderThan) * 1000
-    );
+  const { olderThan } = req.query;
+  if (olderThan && typeof olderThan !== "string") {
+    return res.status(400).json({ msg: "olderThan should be an integer " });
+  }
+  const olderThanParsed = parseInt(olderThan || "");
+
+  if (olderThan) {
+    if (isNaN(olderThanParsed)) {
+      return res.status(400).json({ msg: "olderThan should be an integer " });
+    }
+
+    const date: Date = new Date(new Date().getTime() - olderThanParsed * 1000);
     const rows: any = await query(
       "DELETE FROM user WHERE authLevel = ? AND createdAt < ?",
       [AuthLevel.Unverified, moment(date).utc().format("YYYY-MM-DD HH:mm:ss")]
