@@ -302,6 +302,7 @@ export const deleteUnverified = async (
   if (req.user?.authLevel !== AuthLevel.Admin) {
     return res.status(403).json({ msg: "Forbidden" });
   }
+  // number of seconds the accounts have to have existed for to be deleted
   const { olderThan } = req.query;
   if (olderThan && typeof olderThan !== "string") {
     return res.status(400).json({ msg: "olderThan should be an integer " });
