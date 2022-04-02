@@ -6,6 +6,7 @@ import { AuthLevel, User } from "../models";
 import { sendOTPEmail, sendVerificationEmail, notifyPeople } from "../email";
 import mysql from "mysql2";
 import { getOffers } from "../auth";
+import moment from "moment";
 
 const checkEmailValidity = (email: string): boolean => {
   return /(.*)\.(.*)@gymhaan.de/.test(email);
@@ -294,14 +295,30 @@ export const deleteUser = async (
   }
 };
 
-export const deleteUnverified = async (req: express.Request, res: express.Response) => {
+export const deleteUnverified = async (
+  req: express.Request,
+  res: express.Response
+) => {
   if (req.user?.authLevel !== AuthLevel.Admin) {
-    return res.status(403).json({msg: "Forbidden"})
+    return res.status(403).json({ msg: "Forbidden" });
   }
-  const rows: any = await query("DELETE FROM user WHERE authLevel = ?", [AuthLevel.Unverified])
+  if (req.query.olderThan && typeof req.query.olderThan === "string") {
+    const date: Date = new Date(
+      new Date().getTime() - parseInt(req.query.olderThan) * 1000
+    );
+    const rows: any = await query(
+      "DELETE FROM user WHERE authLevel = ? AND createdAt < ?",
+      [AuthLevel.Unverified, moment(date).utc().format("YYYY-MM-DD HH:mm:ss")]
+    );
 
-  return res.status(200).json({affectedRows: rows.affectedRows})
-}
+    return res.status(200).json({ affectedRows: rows.affectedRows });
+  }
+  const rows: any = await query("DELETE FROM user WHERE authLevel = ?", [
+    AuthLevel.Unverified,
+  ]);
+
+  return res.status(200).json({ affectedRows: rows.affectedRows });
+};
 
 export const getUser = (req: express.Request, res: express.Response) => {
   if (req.user) {
