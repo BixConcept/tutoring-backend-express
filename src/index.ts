@@ -45,6 +45,7 @@ export const query = async (statement: string, params?: any) => {
   const connection = await mysql.createConnection(config);
   const [results] = await connection.query(statement, params);
   connection.commit();
+  connection.end();
 
   return results;
 };
@@ -164,7 +165,7 @@ app.get("/user/verify", user.verify);
 app.post("/user/otp", user.otp);
 app.delete("/user", user.deleteMyself);
 app.delete("/user/:id(\\d+)", user.deleteUser);
-app.delete("/user/unverified", user.deleteUnverified)
+app.delete("/user/unverified", user.deleteUnverified);
 app.get("/user/:id(\\d+)", user.getUserById);
 app.get("/user/email-available/:email", user.emailAvailable);
 
