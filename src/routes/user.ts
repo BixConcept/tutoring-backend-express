@@ -436,7 +436,7 @@ export const logout = async (req: express.Request, res: express.Response) => {
   if (cookie) {
     try {
       await query("DELETE FROM session WHERE token = ?", [cookie]);
-      res.clearCookie("session-keks").json({ msg: "logged out" });
+      return res.clearCookie("session-keks").json({ msg: "logged out" });
     } catch (e: any) {
       console.error(e);
       return res.status(500).json({ msg: "internal server error" });
