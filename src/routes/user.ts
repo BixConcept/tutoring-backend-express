@@ -4,7 +4,6 @@ import crypto from "crypto";
 import { addSession } from "../auth";
 import { AuthLevel, User } from "../models";
 import { sendOTPEmail, sendVerificationEmail, notifyPeople } from "../email";
-import mysql from "mysql2";
 import { getOffers } from "../auth";
 import moment from "moment";
 

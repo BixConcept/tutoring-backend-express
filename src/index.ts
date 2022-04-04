@@ -25,6 +25,12 @@ const logger = async (req: express.Request, _: any, next: any) => {
       req.user === undefined ? 0 : req.user.authLevel
     } ${req.ip} ${req.user ? req.user.email + "#" + req.user.id : ""}`
   );
+
+  // spams the database
+  if (req.path.startsWith("/user/email-available")) {
+    return next();
+  }
+
   try {
     await query(
       `INSERT INTO apiRequest (method, authLevel, path, ip) VALUES (?, ?, ?, ?)`,
@@ -153,6 +159,7 @@ app.get("/", (_: express.Request, res: express.Response) => {
 // stats
 app.get("/apiRequests", stats.getApiRequests);
 app.get("/stats", stats.getStats);
+app.get("/apiRequests/paths", stats.getPaths);
 
 // // user
 app.get("/user", user.getUser);

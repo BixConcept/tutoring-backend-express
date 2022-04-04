@@ -33,7 +33,7 @@ export const getApiRequests = async (
           return res.status(400).json({ msg: "?aggregate must be an integer" });
         }
 
-        // difference between first and last request in seconds
+        // difference between first and last request in milli seconds
         const delta =
           results[results.length - 1].time.getTime() -
           results[0].time.getTime();
@@ -46,12 +46,18 @@ export const getApiRequests = async (
           .fill(null)
           .map((_, i) => first.getTime() + i * interval);
 
+        if (delta >= parseInt(req.query.aggregate)) {
+          return res.json({
+            content: [{ time: first.getTime(), value: results.length }],
+          });
+        }
         const values = times.map((value: number) => ({
           time: value,
           value: results.filter(
             (x) => x.time > value && x.time.getTime() < value + interval
           ).length,
         }));
+        console.log(values);
         return res.json({ content: values });
       } else {
         return res.json({ content: results });
@@ -76,6 +82,30 @@ export const getStats = async (req: express.Request, res: express.Response) => {
       )
     );
     return res.json({ content: results[0] });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(500).json({ msg: "internal server error" });
+  }
+};
+
+export const getPaths = async (req: express.Request, res: express.Response) => {
+  if (!req.user || req.user?.authLevel === AuthLevel.Unverified) {
+    return res.status(403).json({ msg: "forbidden" });
+  }
+
+  try {
+    const results = emptyOrRows(
+      await query(
+        `SELECT path,COUNT(*) as count FROM apiRequest GROUP BY path ORDER BY count DESC`
+      )
+    );
+
+    let formatted: { [key: string]: number } = {};
+    results.forEach((x: { path: string; count: number }) => {
+      formatted[x.path] = x.count;
+    });
+
+    return res.json({ content: formatted });
   } catch (e: any) {
     console.error(e);
     return res.status(500).json({ msg: "internal server error" });
