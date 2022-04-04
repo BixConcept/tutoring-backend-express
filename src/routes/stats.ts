@@ -1,6 +1,7 @@
 import { query, emptyOrRows } from "../index";
 import express from "express";
 import { AuthLevel } from "../models";
+import platform from "platform";
 
 // app.get("/apiRequests", (req: express.Request, res: express.Response) => {
 export const getApiRequests = async (
@@ -106,6 +107,37 @@ export const getPaths = async (req: express.Request, res: express.Response) => {
     });
 
     return res.json({ content: formatted });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(500).json({ msg: "internal server error" });
+  }
+};
+
+export const getPlatforms = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  if (!req.user || req.user.authLevel === AuthLevel.Unverified) {
+    return res.status(403).json({ msg: "forbidden" });
+  }
+
+  try {
+    const results = emptyOrRows(
+      await query(`SELECT userAgent FROM apiRequest`)
+    );
+
+    let parsed = results.reduce((prev, x) => {
+      let a = platform.parse(x.userAgent);
+      if (req.query.browser) {
+        if (!a.name) return prev;
+        return { ...prev, ...{ [a.name]: (prev[a.name] || 0) + 1 } };
+      } else {
+        if (!a.os?.family) return prev;
+        return { ...prev, ...{ [a.os.family]: (prev[a.os.family] || 0) + 1 } };
+      }
+    }, {});
+
+    return res.json({ content: parsed });
   } catch (e: any) {
     console.error(e);
     return res.status(500).json({ msg: "internal server error" });

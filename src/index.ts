@@ -26,19 +26,26 @@ const logger = async (req: express.Request, _: any, next: any) => {
     } ${req.ip} ${req.user ? req.user.email + "#" + req.user.id : ""}`
   );
 
+  let path = req.path;
+
   // spams the database
   if (req.path.startsWith("/user/email-available")) {
     return next();
   }
 
+  if (req.path.match(/^\/user\/\d+/)) {
+    path = "/user/:id";
+  }
+
   try {
     await query(
-      `INSERT INTO apiRequest (method, authLevel, path, ip) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO apiRequest (method, authLevel, path, ip, userAgent) VALUES (?, ?, ?, ?, ?)`,
       [
         req.method || "",
         req.user === undefined ? 0 : req.user.authLevel,
         req.path || "",
         req.ip || "",
+        req.headers["user-agent"] || null,
       ]
     );
   } catch (e: any) {
@@ -160,6 +167,7 @@ app.get("/", (_: express.Request, res: express.Response) => {
 app.get("/apiRequests", stats.getApiRequests);
 app.get("/stats", stats.getStats);
 app.get("/apiRequests/paths", stats.getPaths);
+app.get("/apiRequests/platforms", stats.getPlatforms);
 
 // // user
 app.get("/user", user.getUser);
