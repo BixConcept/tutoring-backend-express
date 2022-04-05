@@ -93,7 +93,6 @@ CREATE TABLE IF NOT EXISTS `session` (
     FOREIGN KEY (`userId`) REFERENCES user (id) ON DELETE CASCADE
 );
 
--- nice statistics for admin dashboard + anonym
 CREATE TABLE IF NOT EXISTS `apiRequest` (
     id INT NOT NULL AUTO_INCREMENT,
     method VARCHAR(10) NOT NULL,
@@ -101,6 +100,6 @@ CREATE TABLE IF NOT EXISTS `apiRequest` (
     path VARCHAR(255) NOT NULL,
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ip VARCHAR(64) NOT NULL,
-    userAgent VARCHAR(128) NULL,
+    userAgent TEXT NULL,
     PRIMARY KEY (id)
 );
