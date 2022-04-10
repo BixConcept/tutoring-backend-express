@@ -47,7 +47,7 @@ export const getApiRequests = async (
           .fill(null)
           .map((_, i) => first.getTime() + i * interval);
 
-        if (delta >= parseInt(req.query.aggregate)) {
+        if (delta <= parseInt(req.query.aggregate)) {
           return res.json({
             content: [{ time: first.getTime(), value: results.length }],
           });
@@ -58,7 +58,6 @@ export const getApiRequests = async (
             (x) => x.time > value && x.time.getTime() < value + interval
           ).length,
         }));
-        console.log(values);
         return res.json({ content: values });
       } else {
         return res.json({ content: results });
@@ -128,7 +127,9 @@ export const getPlatforms = async (
 
   try {
     const results = emptyOrRows(
-      await query(`SELECT userAgent FROM apiRequest`)
+      await query(
+        `SELECT userAgent FROM apiRequest WHERE userAgent IS NOT NULL`
+      )
     );
 
     let parsed = results.reduce((prev, x) => {

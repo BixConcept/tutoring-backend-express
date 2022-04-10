@@ -47,7 +47,7 @@ const logger = async (req: express.Request, _: any, next: any) => {
       [
         req.method || "",
         req.user === undefined ? 0 : req.user.authLevel,
-        req.path || "",
+        path,
         req.ip || "",
         req.headers["user-agent"] || null,
         frontendPath,
