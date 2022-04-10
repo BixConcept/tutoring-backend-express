@@ -20,10 +20,14 @@ const PORT = 5001 || process.env.PORT;
 dotenv.config();
 
 const logger = async (req: express.Request, _: any, next: any) => {
+  let frontendPath = req.headers["x-frontend-path"] || null;
+
   console.log(
     `${req.method} ${req.path} ${
       req.user === undefined ? 0 : req.user.authLevel
-    } ${req.ip} ${req.user ? req.user.email + "#" + req.user.id : ""}`
+    } ${req.ip} ${req.user ? req.user.email + "#" + req.user.id : ""} ${
+      frontendPath ? frontendPath : ""
+    }`
   );
 
   let path = req.path;
@@ -39,13 +43,14 @@ const logger = async (req: express.Request, _: any, next: any) => {
 
   try {
     await query(
-      `INSERT INTO apiRequest (method, authLevel, path, ip, userAgent) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO apiRequest (method, authLevel, path, ip, userAgent, frontendPath) VALUES (?, ?, ?, ?, ?, ?)`,
       [
         req.method || "",
         req.user === undefined ? 0 : req.user.authLevel,
         req.path || "",
         req.ip || "",
         req.headers["user-agent"] || null,
+        frontendPath,
       ]
     );
   } catch (e: any) {
@@ -81,6 +86,7 @@ app
           ? [process.env.FRONTEND_URL || ""]
           : "http://localhost:3000",
       credentials: true,
+      allowedHeaders: "x-frontend-path",
     })
   )
   .use(cookieParser())

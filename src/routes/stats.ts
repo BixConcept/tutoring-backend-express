@@ -94,17 +94,22 @@ export const getPaths = async (req: express.Request, res: express.Response) => {
     return res.status(403).json({ msg: "forbidden" });
   }
 
+  let frontendPaths = false;
+
   try {
+    let relevantColumn = frontendPaths ? "frontendPath" : "path";
     const results = emptyOrRows(
       await query(
-        `SELECT path,COUNT(*) as count FROM apiRequest GROUP BY path ORDER BY count DESC`
+        `SELECT ${relevantColumn} as somePath,COUNT(*) as count FROM apiRequest GROUP BY ${relevantColumn} ORDER BY count DESC`
       )
     );
 
     let formatted: { [key: string]: number } = {};
-    results.forEach((x: { path: string; count: number }) => {
-      formatted[x.path] = x.count;
-    });
+    results.forEach(
+      (x: { somePath: string; frontendPath: string; count: number }) => {
+        formatted[x.somePath] = x.count;
+      }
+    );
 
     return res.json({ content: formatted });
   } catch (e: any) {

@@ -47,4 +47,6 @@ export interface ApiRequest {
   authLevel: AuthLevel;
   path: string;
   time: Date;
+  userAgent?: string;
+  frontendPath?: string;
 }

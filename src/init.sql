@@ -101,5 +101,6 @@ CREATE TABLE IF NOT EXISTS `apiRequest` (
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ip VARCHAR(64) NOT NULL,
     userAgent TEXT NULL,
+    frontendPath TEXT NULL,
     PRIMARY KEY (id)
 );
