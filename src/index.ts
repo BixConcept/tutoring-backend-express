@@ -61,11 +61,15 @@ const logger = async (req: express.Request, _: any, next: any) => {
 
 export const query = async (statement: string, params?: any) => {
   const connection = await mysql.createConnection(config);
-  const [results] = await connection.query(statement, params);
-  connection.commit();
-  connection.end();
-
-  return results;
+  try {
+    const [results] = await connection.query(statement, params);
+    return results;
+  } catch (e: any) {
+    throw e;
+  } finally {
+    connection.commit();
+    connection.end();
+  }
 };
 
 export const emptyOrRows = (rows: any): any[] => {
