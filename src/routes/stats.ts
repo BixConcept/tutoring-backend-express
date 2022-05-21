@@ -93,7 +93,7 @@ export const getPaths = async (req: express.Request, res: express.Response) => {
     return res.status(403).json({ msg: "forbidden" });
   }
 
-  let frontendPaths = false;
+  let frontendPaths = req.query.frontendPaths === "true";
 
   try {
     let relevantColumn = frontendPaths ? "frontendPath" : "path";
