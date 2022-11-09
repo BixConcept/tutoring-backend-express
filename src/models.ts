@@ -50,3 +50,8 @@ export interface ApiRequest {
   userAgent?: string;
   frontendPath?: string;
 }
+
+export interface PaginationInfo {
+  start: any | null;
+  n: number | null;
+}

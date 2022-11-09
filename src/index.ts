@@ -8,56 +8,18 @@ import express from "express";
 import fs from "fs";
 import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
-import { getUser } from "./auth";
+import {getUser} from "./auth";
 import * as offer from "./routes/offer";
 import * as request from "./routes/request";
 import * as stats from "./routes/stats";
 import * as subject from "./routes/subject";
 import * as user from "./routes/user";
+import {logger} from "./middlewares";
 
 export const app = express();
 const PORT = 5001 || process.env.PORT;
 dotenv.config();
 
-const logger = async (req: express.Request, _: any, next: any) => {
-  let frontendPath = req.headers["x-frontend-path"] || null;
-
-  console.log(
-    `${req.method} ${req.path} ${
-      req.user === undefined ? 0 : req.user.authLevel
-    } ${req.ip} ${req.user ? req.user.email + "#" + req.user.id : ""} ${
-      frontendPath ? frontendPath : ""
-    }`
-  );
-
-  let path = req.path;
-
-  // spams the database
-  if (req.path.startsWith("/user/email-available")) {
-    return next();
-  }
-
-  if (req.path.match(/^\/user\/\d+/)) {
-    path = "/user/:id";
-  }
-
-  try {
-    await query(
-      `INSERT INTO apiRequest (method, authLevel, path, ip, userAgent, frontendPath) VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        req.method || "",
-        req.user === undefined ? 0 : req.user.authLevel,
-        path,
-        req.ip || "",
-        req.headers["user-agent"] || null,
-        frontendPath,
-      ]
-    );
-  } catch (e: any) {
-    console.error("error logging:", e);
-  }
-  next();
-};
 
 export const query = async (statement: string, params?: any) => {
   const connection = await mysql.createConnection(config);
@@ -120,13 +82,13 @@ const config: mysql.ConnectionOptions = {
 
 // NOREPLY@GYMHAAN.DE
 export const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_SERVER?.split(":")[0],
-  port: parseInt(process.env.EMAIL_SERVER?.split(":")[1] || "") || 465,
-  secure: process.env.EMAIL_SERVER?.split(":")[1] === "465" ? true : false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
+    host: process.env.EMAIL_SERVER?.split(":")[0],
+    port: parseInt(process.env.EMAIL_SERVER?.split(":")[1] || "") || 465,
+    secure: process.env.EMAIL_SERVER?.split(":")[1] === "465",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+    },
 });
 
 // converts something like 'christian.lindner@fdphaan.de' to Christian Lindner
@@ -141,7 +103,7 @@ export const emailToName = (email: string): string => {
 const capitalizeWord = (x: string): string => {
   return x.charAt(0).toUpperCase() + x.slice(1);
 };
-// this reads the file which contains seperate sql statements seperated by a single empty line and executes them seperately.
+// this reads the file which contains separate sql statements seperated by a single empty line and executes them separately.
 fs.readFile(
   "./src/init.sql",
   (err: NodeJS.ErrnoException | null, data: Buffer) => {
@@ -166,7 +128,7 @@ fs.readFile(
 
 /* ROUTES */
 app.get("/", (_: express.Request, res: express.Response) => {
-  exec("git rev-parse --short HEAD", (error, stdout, stderr) => {
+  exec("git rev-parse --short HEAD", (error, stdout, _) => {
     res.send(
       `<h1>Tutoring REST API</h1><a href="https://github.com/bixconcept/tutoring-backend-express">Source Code</a><p>Version <a href="https://github.com/BixConcept/tutoring-backend-express/commit/${stdout}">${stdout}</p>`
     );
@@ -194,14 +156,14 @@ app.delete("/user/unverified", user.deleteUnverified);
 app.get("/user/:id(\\d+)", user.getUserById);
 app.get("/user/email-available/:email", user.emailAvailable);
 
-// // offer
+// offer
 app.post("/find", offer.find);
 app.get("/offers", offer.getOffers);
 app.post("/offer", offer.createOffer);
 app.delete("/offer/:id(\\d+)", offer.deleteOffer);
 app.get("/offer/:id(\\d+)", offer.getOfferById);
 
-// // request
+// request
 app.post("/request", request.postRequest);
 app.get("/requests", request.getRequests);
 

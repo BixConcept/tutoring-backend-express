@@ -11,7 +11,7 @@
 All configuration is done using environment variables. We look for a `.env` file in the directory the API is run from for convenience and persistence
 
 | key              | description                                                                  | example value               | fallback |
-| ---------------- | ---------------------------------------------------------------------------- | --------------------------- | -------- |
+|------------------|------------------------------------------------------------------------------|-----------------------------|----------|
 | `PORT`           | The port the API listens on                                                  | 8080                        | 5001     |
 | `DB_HOST`        | Host of a MySQL server                                                       | localhost                   |          |
 | `DB_USER`        | The user the API uses to make queries to the database                        | stefanguenther              |          |
