@@ -1,5 +1,5 @@
 import bodyParser from "body-parser";
-import { exec } from "child_process";
+import {exec} from "child_process";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -14,7 +14,7 @@ import * as request from "./routes/request";
 import * as stats from "./routes/stats";
 import * as subject from "./routes/subject";
 import * as user from "./routes/user";
-import {logger} from "./middlewares";
+import {errorHandler, logger, paginationInfo} from "./middlewares";
 
 export const app = express();
 const PORT = 5001 || process.env.PORT;
@@ -59,8 +59,10 @@ app
   .use(compression())
   .use(getUser)
   .use(logger)
+  .use(paginationInfo)
   .use(bodyParser.json())
-  .use(bodyParser.urlencoded({ extended: true }));
+  .use(bodyParser.urlencoded({extended: true}))
+  .use(errorHandler);
 
 // create connection
 const config: mysql.ConnectionOptions = {
@@ -82,13 +84,13 @@ const config: mysql.ConnectionOptions = {
 
 // NOREPLY@GYMHAAN.DE
 export const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_SERVER?.split(":")[0],
-    port: parseInt(process.env.EMAIL_SERVER?.split(":")[1] || "") || 465,
-    secure: process.env.EMAIL_SERVER?.split(":")[1] === "465",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-    },
+  host: process.env.EMAIL_SERVER?.split(":")[0],
+  port: parseInt(process.env.EMAIL_SERVER?.split(":")[1] || "") || 465,
+  secure: process.env.EMAIL_SERVER?.split(":")[1] === "465",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
 });
 
 // converts something like 'christian.lindner@fdphaan.de' to Christian Lindner
@@ -141,7 +143,7 @@ app.get("/stats", stats.getStats);
 app.get("/apiRequests/paths", stats.getPaths);
 app.get("/apiRequests/platforms", stats.getPlatforms);
 
-// // user
+// user
 app.get("/user", user.getUser);
 app.put("/user", user.putUser);
 app.put("/user/:id", user.putUser);

@@ -1,10 +1,10 @@
-import { query, emailToName, transporter, emptyOrRows } from "../index";
+import {query, emailToName, transporter, emptyOrRows} from "../index";
 import express from "express";
 import crypto from "crypto";
-import { addSession } from "../auth";
-import { AuthLevel, User } from "../models";
-import { sendOTPEmail, sendVerificationEmail, notifyPeople } from "../email";
-import { getOffers } from "../auth";
+import {addSession} from "../auth";
+import {AuthLevel, User} from "../models";
+import {sendOTPEmail, sendVerificationEmail, notifyPeople} from "../email";
+import {getOffers} from "../auth";
 import moment from "moment";
 
 const checkEmailValidity = (email: string): boolean => {
@@ -38,18 +38,18 @@ export const register = async (req: express.Request, res: express.Response) => {
       subjects[parseInt(key)] = parseInt(subjectsmaybe[key].toString());
     });
   } catch (e: any) {
-    return res.status(400).json({ msg: "invalid subjects" });
+    return res.status(400).json({msg: "invalid subjects"});
   }
 
   // hackery because frontend
   if (!checkEmailValidity(email) && !checkEmailValidity(email + "@gymhaan.de"))
-    return res.status(400).json({ msg: "invalid email" });
+    return res.status(400).json({msg: "invalid email"});
 
   // check if grade is valid
   if (!grade || grade < 5 || grade > 13) {
     return res
       .status(400)
-      .json({ msg: "invalid grade, must be >= 5 and <= 13" });
+      .json({msg: "invalid grade, must be >= 5 and <= 13"});
   }
 
   // check if the given subjed ids are valid
@@ -57,22 +57,29 @@ export const register = async (req: express.Request, res: express.Response) => {
 
   const statement =
     givenIds.length > 0
-      ? `SELECT id, name FROM subject WHERE id IN (${givenIds.join(",")});` // check if the id is in subjects
-      : `SELECT id, name FROM subject WHERE 0`; // zero rows if there are no given ids
+      ? `SELECT id, name
+         FROM subject
+         WHERE id IN (${givenIds.join(",")});` // check if the id is in subjects
+      : `SELECT id, name
+         FROM subject
+         WHERE 0`; // zero rows if there are no given ids
 
   try {
     const dbSubjects = emptyOrRows(await query(statement));
     if (dbSubjects.length < givenIds.length) {
       return res
         .status(400)
-        .json({ msg: `some of the given subject ids are invalid` });
+        .json({msg: `some of the given subject ids are invalid`});
     }
   } catch (e) {
     console.error(`error querying database for subject with id: ${e}`);
-    return res.status(500).json({ msg: "internal server error" });
+    return res.status(500).json({msg: "internal server error"});
   }
 
-  const sqlCommand: string = `INSERT INTO user (email, name, authLevel, updatedAt, misc, grade, phoneNumber, hasSignal, hasWhatsapp, hasDiscord, discordUser) VALUES(?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?); SELECT LAST_INSERT_ID();`;
+  const sqlCommand: string = `INSERT INTO user (email, name, authLevel, updatedAt, misc, grade, phoneNumber, hasSignal,
+                                                hasWhatsapp, hasDiscord, discordUser)
+                              VALUES (?, ?, 0, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?);
+  SELECT LAST_INSERT_ID();`;
   try {
     const results = emptyOrRows(
       await query(sqlCommand, [
@@ -93,7 +100,8 @@ export const register = async (req: express.Request, res: express.Response) => {
     Object.keys(subjects).forEach((key: any) => {
       try {
         query(
-          `INSERT INTO offer (userId, subjectId, maxGrade) VALUES (?, ?, ?)`,
+          `INSERT INTO offer (userId, subjectId, maxGrade)
+           VALUES (?, ?, ?)`,
           [id, parseInt(key), subjects[key]]
         );
       } catch (e: any) {
@@ -110,7 +118,7 @@ export const register = async (req: express.Request, res: express.Response) => {
       code += "?intent=" + encodeURIComponent(intent);
     }
     sendVerificationEmail(transporter, code, email, emailToName(email));
-    return res.json({ msg: "account was created" });
+    return res.json({msg: "account was created"});
   } catch (e: any) {
     if (e.code === "ER_DUP_ENTRY") {
       return res.status(409).json({
@@ -128,7 +136,7 @@ export const verify = async (req: express.Request, res: express.Response) => {
   const code = req.query.code;
 
   if (!code) {
-    return res.status(400).json({ msg: "no code specified" });
+    return res.status(400).json({msg: "no code specified"});
   }
 
   // check if there are any codes that match the one given
@@ -140,11 +148,20 @@ export const verify = async (req: express.Request, res: express.Response) => {
       )
     );
     if (!results[0]["COUNT(1)"]) {
-      return res.status(401).json({ msg: "invalid code" });
+      return res.status(401).json({msg: "invalid code"});
     }
 
     // update the user record and set user.authLevel = 1
-    const sqlCommand = `UPDATE user, verificationToken SET user.authLevel = 1 WHERE user.id = verificationToken.userId AND verificationToken.token = ? AND user.authLevel = 0; SELECT user.id FROM user, verificationToken WHERE user.id = verificationToken.userId AND verificationToken.token = ?`;
+    const sqlCommand = `UPDATE user, verificationToken
+                        SET user.authLevel = 1
+                        WHERE user.id = verificationToken.userId
+                          AND verificationToken.token = ?
+                          AND user.authLevel = 0;
+    SELECT user.id
+    FROM user,
+         verificationToken
+    WHERE user.id = verificationToken.userId
+      AND verificationToken.token = ?`;
     try {
       const values = emptyOrRows(await query(sqlCommand, [code, code]));
 
@@ -182,14 +199,14 @@ export const verify = async (req: express.Request, res: express.Response) => {
             secure: true,
           });
 
-          return res.json({ msg: "account was verified" });
+          return res.json({msg: "account was verified"});
         } catch (e: any) {
           console.log(e);
           return;
         }
       } catch (e: any) {
         // I hope this checks for everything
-        return res.status(401).json({ msg: "invalid code" });
+        return res.status(401).json({msg: "invalid code"});
       }
     } catch (e: any) {
       console.error(e);
@@ -197,7 +214,7 @@ export const verify = async (req: express.Request, res: express.Response) => {
     }
   } catch (e: any) {
     console.error(e);
-    return res.status(401).json({ msg: "invalid code" });
+    return res.status(401).json({msg: "invalid code"});
   }
 };
 
@@ -224,7 +241,7 @@ export const otp = async (req: express.Request, res: express.Response) => {
       return;
     }
 
-    const { email, name } = results[0];
+    const {email, name} = results[0];
 
     let code = generateCode(32);
     try {
@@ -233,15 +250,15 @@ export const otp = async (req: express.Request, res: express.Response) => {
         results[0].id,
       ]);
     } catch (e: any) {
-      res.status(500).json({ msg: "internal server error" });
+      res.status(500).json({msg: "internal server error"});
       return;
     }
 
     await sendOTPEmail(transporter, code, email, name.split(" ")[0]);
-    res.json({ msg: "email sent" });
+    res.json({msg: "email sent"});
   } catch (e: any) {
     console.error(e);
-    res.status(500).json({ msg: "internal server error" });
+    res.status(500).json({msg: "internal server error"});
     return;
   }
 };
@@ -254,14 +271,14 @@ export const deleteMyself = async (
   if (req.user) {
     try {
       await query("DELETE FROM user WHERE id = ?", [req.user.id]);
-      return res.json({ msg: "success" });
+      return res.json({msg: "success"});
     } catch (e: any) {
       console.error(e);
-      res.status(500).json({ msg: "internal server error" });
+      res.status(500).json({msg: "internal server error"});
       return;
     }
   } else {
-    return res.status(401).json({ msg: "not authenticated" });
+    return res.status(401).json({msg: "not authenticated"});
   }
 };
 
@@ -270,26 +287,26 @@ export const deleteUser = async (
   res: express.Response
 ) => {
   if (!req.user) {
-    return res.status(401).json({ msg: "not authenticated" });
+    return res.status(401).json({msg: "not authenticated"});
   }
   if (req.user.authLevel !== AuthLevel.Admin) {
-    return res.status(403).json({ msg: "forbidden" });
+    return res.status(403).json({msg: "forbidden"});
   }
 
   let userId = req.params.id;
   if (!userId) {
-    return res.status(400).json({ msg: "no user id specified" });
+    return res.status(400).json({msg: "no user id specified"});
   }
 
   try {
     const rows: any = await query("DELETE FROM user WHERE id = ?", [userId]);
     if (rows.affectedRows === 0) {
-      return res.status(404).json({ msg: "specified user does not exist" });
+      return res.status(404).json({msg: "specified user does not exist"});
     }
-    return res.json({ msg: "success" });
+    return res.json({msg: "success"});
   } catch (e: any) {
     console.error(e);
-    res.status(500).json({ msg: "internal server error" });
+    res.status(500).json({msg: "internal server error"});
     return;
   }
 };
@@ -299,18 +316,18 @@ export const deleteUnverified = async (
   res: express.Response
 ) => {
   if (req.user?.authLevel !== AuthLevel.Admin) {
-    return res.status(403).json({ msg: "Forbidden" });
+    return res.status(403).json({msg: "Forbidden"});
   }
   // number of seconds the accounts have to have existed for to be deleted
-  const { olderThan } = req.query;
+  const {olderThan} = req.query;
   if (olderThan && typeof olderThan !== "string") {
-    return res.status(400).json({ msg: "olderThan should be an integer " });
+    return res.status(400).json({msg: "olderThan should be an integer "});
   }
   const olderThanParsed = parseInt(olderThan || "");
 
   if (olderThan) {
     if (isNaN(olderThanParsed)) {
-      return res.status(400).json({ msg: "olderThan should be an integer " });
+      return res.status(400).json({msg: "olderThan should be an integer "});
     }
 
     const date: Date = new Date(new Date().getTime() - olderThanParsed * 1000);
@@ -319,20 +336,20 @@ export const deleteUnverified = async (
       [AuthLevel.Unverified, moment(date).utc().format("YYYY-MM-DD HH:mm:ss")]
     );
 
-    return res.status(200).json({ affectedRows: rows.affectedRows });
+    return res.status(200).json({affectedRows: rows.affectedRows});
   }
   const rows: any = await query("DELETE FROM user WHERE authLevel = ?", [
     AuthLevel.Unverified,
   ]);
 
-  return res.status(200).json({ affectedRows: rows.affectedRows });
+  return res.status(200).json({affectedRows: rows.affectedRows});
 };
 
 export const getUser = (req: express.Request, res: express.Response) => {
   if (req.user) {
-    return res.json({ content: req.user });
+    return res.json({content: req.user});
   } else {
-    return res.status(401).json({ msg: "unauthorized" });
+    return res.status(401).json({msg: "unauthorized"});
   }
 };
 
@@ -375,7 +392,7 @@ export const putUser = async (req: express.Request, res: express.Response) => {
         });
       }
     } else {
-      const { id } = req.params;
+      const {id} = req.params;
       if (id) {
         try {
           const results = emptyOrRows(
@@ -399,7 +416,7 @@ export const putUser = async (req: express.Request, res: express.Response) => {
     }
 
     // this merges the things
-    let updated = { ...oldUser, ...changes };
+    let updated = {...oldUser, ...changes};
     console.log(updated);
 
     try {
@@ -420,13 +437,13 @@ export const putUser = async (req: express.Request, res: express.Response) => {
           updated.id,
         ]
       );
-      return res.json({ msg: "successful" });
+      return res.json({msg: "successful"});
     } catch (e: any) {
       console.error(e);
-      return res.status(500).json({ msg: "internal server error" });
+      return res.status(500).json({msg: "internal server error"});
     }
   } else {
-    return res.status(401).json({ msg: "unauthorized" });
+    return res.status(401).json({msg: "unauthorized"});
   }
 };
 
@@ -435,34 +452,37 @@ export const logout = async (req: express.Request, res: express.Response) => {
   if (cookie) {
     try {
       await query("DELETE FROM session WHERE token = ?", [cookie]);
-      return res.clearCookie("session-keks").json({ msg: "logged out" });
+      return res.clearCookie("session-keks").json({msg: "logged out"});
     } catch (e: any) {
       console.error(e);
-      return res.status(500).json({ msg: "internal server error" });
+      return res.status(500).json({msg: "internal server error"});
     }
   }
-  return res.status(401).json({ msg: "unauthorized" });
+  return res.status(401).json({msg: "unauthorized"});
 };
 
 export const getUsers = async (req: express.Request, res: express.Response) => {
+  console.log(req.paginationInfo);
+
   if (!req.user) {
-    return res.status(401).json({ msg: "unauthorized" });
+    return res.status(401).json({msg: "unauthorized"});
   }
   if (req.user.authLevel >= AuthLevel.Verified) {
     try {
-      const users = emptyOrRows(await query("SELECT * FROM user"));
+      const users = emptyOrRows(await query("SELECT * FROM user WHERE user.id > ? LIMIT ?", [req.paginationInfo.start || 0, req.paginationInfo.n]));
+      // FIXME: optimize this
       const asdf = users.map(async (x) => {
-        return { ...x, ...{ offers: await getOffers(x.id) } };
+        return {...x, ...{offers: await getOffers(x.id)}};
       });
       const resolved = await Promise.all(asdf);
 
-      return res.json({ content: resolved });
+      return res.json({content: resolved, pagination: {...req.paginationInfo}});
     } catch (e) {
       console.error(e);
-      return res.status(500).json({ msg: "internal server error" });
+      return res.status(500).json({msg: "internal server error"});
     }
   } else {
-    return res.status(403).json({ msg: "forbidden" });
+    return res.status(403).json({msg: "forbidden"});
   }
 };
 
@@ -472,24 +492,24 @@ export const getUserById = async (
 ) => {
   const id = parseInt(req.params.id);
   if (!id) {
-    return res.status(400).json({ msg: "You have to provide an id" });
+    return res.status(400).json({msg: "You have to provide an id"});
   }
   try {
     const result = emptyOrRows(
       await query("SELECT * FROM user where id = ?", [id])
     );
     if (result.length === 0) {
-      return res.status(404).json({ msg: `user with id ${id} does not exist` });
+      return res.status(404).json({msg: `user with id ${id} does not exist`});
     }
 
     delete result[0].passwordHash;
 
     result[0].offers = await getOffers(id);
 
-    return res.json({ content: result[0] });
+    return res.json({content: result[0]});
   } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ msg: "internal server error" });
+    return res.status(500).json({msg: "internal server error"});
   }
 };
 
@@ -499,7 +519,7 @@ export const emailAvailable = async (
 ) => {
   const email = req.params.email;
   if (!email) {
-    res.status(400).json({ msg: "you have to provide an email address" });
+    res.status(400).json({msg: "you have to provide an email address"});
   }
 
   try {
@@ -507,12 +527,12 @@ export const emailAvailable = async (
       await query("SELECT 1 FROM user WHERE email = ?", [email])
     );
     if (results.length === 0) {
-      return res.json({ msg: "available" });
+      return res.json({msg: "available"});
     } else {
-      return res.status(409).json({ msg: "taken" });
+      return res.status(409).json({msg: "taken"});
     }
   } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ msg: "internal server error" });
+    return res.status(500).json({msg: "internal server error"});
   }
 };
