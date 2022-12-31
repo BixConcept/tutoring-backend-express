@@ -41,8 +41,14 @@ export const register = async (req: express.Request, res: express.Response) => {
     return res.status(400).json({ msg: "invalid subjects" });
   }
 
+  // necessary because nodemailer will otherwise send asdf@foo.com@gymhaan.de
+  // to asdf@foo.com and that circumvents the whole "only gymhaan email addresses
+  // are valid" thing
+  const emailSplitByAt = email.split('@');
+  const removedAllButFirstAt = emailSplitByAt[0] + emailSplitByAt.slice(1, emailSplitByAt.length).join('').replace('@', '');
+
   // hackery because frontend
-  if (!checkEmailValidity(email) && !checkEmailValidity(email + "@gymhaan.de"))
+  if (!checkEmailValidity(removedAllButFirstAt) && !checkEmailValidity(removedAllButFirstAt + "@gymhaan.de"))
     return res.status(400).json({ msg: "invalid email" });
 
   // check if grade is valid
@@ -76,8 +82,8 @@ export const register = async (req: express.Request, res: express.Response) => {
   try {
     const results = emptyOrRows(
       await query(sqlCommand, [
-        email,
-        emailToName(email),
+        removedAllButFirstAt,
+        emailToName(removedAllButFirstAt),
         misc,
         grade,
         phoneNumber,
@@ -109,7 +115,7 @@ export const register = async (req: express.Request, res: express.Response) => {
     if (intent) {
       code += "?intent=" + encodeURIComponent(intent);
     }
-    sendVerificationEmail(transporter, code, email, emailToName(email));
+    sendVerificationEmail(transporter, code, removedAllButFirstAt, emailToName(removedAllButFirstAt));
     return res.json({ msg: "account was created" });
   } catch (e: any) {
     if (e.code === "ER_DUP_ENTRY") {
