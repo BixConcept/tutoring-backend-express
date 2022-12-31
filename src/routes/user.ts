@@ -471,6 +471,14 @@ export const getUserById = async (
   res: express.Response
 ) => {
   const id = parseInt(req.params.id);
+  if (!req.user) {
+    return res.status(401).json({ msg: "unauthorized" });
+  }
+
+  if (req.user.authLevel < AuthLevel.Verified) {
+    return res.status(403).json({ msg: "forbidden" });
+  }
+
   if (!id) {
     return res.status(400).json({ msg: "You have to provide an id" });
   }
