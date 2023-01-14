@@ -44,12 +44,16 @@ export const register = async (req: express.Request, res: express.Response) => {
   // necessary because nodemailer will otherwise send asdf@foo.com@gymhaan.de
   // to asdf@foo.com and that circumvents the whole "only gymhaan email addresses
   // are valid" thing
+  // removes all '@'s from a string except the first one
   const emailSplitByAt = email.split('@');
-  const removedAllButFirstAt = emailSplitByAt[0] + emailSplitByAt.slice(1, emailSplitByAt.length).join('').replace('@', '');
+  const removedAllButFirstAt = emailSplitByAt[0] + '@' + emailSplitByAt.slice(1, emailSplitByAt.length).join('');
+  console.log(email, removedAllButFirstAt)
 
   // hackery because frontend
   if (!checkEmailValidity(removedAllButFirstAt) && !checkEmailValidity(removedAllButFirstAt + "@gymhaan.de"))
     return res.status(400).json({ msg: "invalid email" });
+
+  console.log(removedAllButFirstAt);
 
   // check if grade is valid
   if (!grade || grade < 5 || grade > 13) {
