@@ -164,6 +164,20 @@ fs.readFile(
   }
 );
 
+async function benchmark() {
+  const start = Date.now();
+
+  // get all api requests
+  const requests = emptyOrRows(await query("SELECT * FROM apiRequest"));
+  console.log(`Returned ${requests.length} results.`);
+
+
+  const end = Date.now();
+  console.log(`Query took ${end - start}ms`);
+}
+
+benchmark();
+
 /* ROUTES */
 app.get("/", (_: express.Request, res: express.Response) => {
   exec("git rev-parse --short HEAD", (error, stdout, stderr) => {
