@@ -9,6 +9,7 @@ import fs from "fs";
 import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
 import { getUser } from "./auth";
+import { benchmark } from "./benchmark";
 import * as offer from "./routes/offer";
 import * as request from "./routes/request";
 import * as stats from "./routes/stats";
@@ -164,19 +165,6 @@ fs.readFile(
   }
 );
 
-async function benchmark() {
-  const start = Date.now();
-
-  // get all api requests
-  const requests = emptyOrRows(await query("SELECT * FROM apiRequest"));
-  console.log(`Returned ${requests.length} results.`);
-
-
-  const end = Date.now();
-  console.log(`Query took ${end - start}ms`);
-}
-
-benchmark();
 
 /* ROUTES */
 app.get("/", (_: express.Request, res: express.Response) => {

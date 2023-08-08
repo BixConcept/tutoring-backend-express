@@ -126,24 +126,41 @@ export const getPlatforms = async (
   }
 
   try {
+    let queryStartTime = Date.now();
     const results = emptyOrRows(
       await query(
         `SELECT userAgent FROM apiRequest WHERE userAgent IS NOT NULL`
       )
     );
 
-    let parsed = results.reduce((prev, x) => {
-      let a = platform.parse(x.userAgent);
-      if (req.query.browser) {
-        if (!a.name) return prev;
-        return { ...prev, ...{ [a.name]: (prev[a.name] || 0) + 1 } };
-      } else {
-        if (!a.os?.family) return prev;
-        return { ...prev, ...{ [a.os.family]: (prev[a.os.family] || 0) + 1 } };
-      }
-    }, {});
+    let platforms: { [key: string]: number } = {};
 
-    return res.json({ content: parsed });
+    // NOTE: this is technically not the most correct way to do this, but assuming
+    // the user agents are all valid, this comes out pretty near the actual result
+    // and is approximately 1000 times more performant than parsing all user agents
+    const browsers = ["Chrome", "Firefox", "Safari", "Opera", "Edge", "Internet Explorer"];
+    const operatingSystems = ["Windows", "Macintosh", "Linux", "Android", "iOS"];
+
+    results.forEach((x) => {
+      // find browser from `browsers` array that matches
+      if (req.query.browser) {
+        let browser = browsers.find((b) => x.userAgent.includes(b));
+        if (browser) {
+          platforms[browser] = (platforms[browser] || 0) + 1;
+          return;
+        }
+
+      } else {
+        // find operating system from `operatingSystems` array that matches
+        let operatingSystem = operatingSystems.find((b) => x.userAgent.includes(b));
+        if (operatingSystem) {
+          platforms[operatingSystem] = (platforms[operatingSystem] || 0) + 1;
+          return;
+        }
+      }
+    });
+
+    return res.json({ content: platforms });
   } catch (e: any) {
     console.error(e);
     return res.status(500).json({ msg: "internal server error" });
