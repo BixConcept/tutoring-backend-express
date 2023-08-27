@@ -7,6 +7,7 @@ import { sendOTPEmail, sendVerificationEmail, notifyPeople } from "../email";
 import { getOffers } from "../auth";
 import moment from "moment";
 
+// this basically just checks if the email contains a period
 const checkEmailValidity = (email: string): boolean => {
   return /(.*)\.(.*)@gymhaan.de/.test(email);
 };
@@ -41,19 +42,16 @@ export const register = async (req: express.Request, res: express.Response) => {
     return res.status(400).json({ msg: "invalid subjects" });
   }
 
-  // necessary because nodemailer will otherwise send asdf@foo.com@gymhaan.de
-  // to asdf@foo.com and that circumvents the whole "only gymhaan email addresses
-  // are valid" thing
-  // removes all '@'s from a string except the first one
-  const emailSplitByAt = email.split('@');
-  const removedAllButFirstAt = emailSplitByAt[0] + '@' + emailSplitByAt.slice(1, emailSplitByAt.length).join('');
-  console.log(email, removedAllButFirstAt)
+  if (!email) {
+    return res.status(400).json({ msg: "no email specified" });
+  }
 
-  // hackery because frontend
-  if (!checkEmailValidity(removedAllButFirstAt) && !checkEmailValidity(removedAllButFirstAt + "@gymhaan.de"))
+  const emailSplitByAt = email.split('@');
+  const sanitizedEmail = emailSplitByAt[0] + "@gymhaan.de";
+
+  if (!checkEmailValidity(sanitizedEmail))
     return res.status(400).json({ msg: "invalid email" });
 
-  console.log(removedAllButFirstAt);
 
   // check if grade is valid
   if (!grade || grade < 5 || grade > 13) {
@@ -86,8 +84,8 @@ export const register = async (req: express.Request, res: express.Response) => {
   try {
     const results = emptyOrRows(
       await query(sqlCommand, [
-        removedAllButFirstAt,
-        emailToName(removedAllButFirstAt),
+        sanitizedEmail,
+        emailToName(sanitizedEmail),
         misc,
         grade,
         phoneNumber,
@@ -119,7 +117,7 @@ export const register = async (req: express.Request, res: express.Response) => {
     if (intent) {
       code += "?intent=" + encodeURIComponent(intent);
     }
-    sendVerificationEmail(transporter, code, removedAllButFirstAt, emailToName(removedAllButFirstAt));
+    sendVerificationEmail(transporter, code, sanitizedEmail, emailToName(sanitizedEmail));
     return res.json({ msg: "account was created" });
   } catch (e: any) {
     if (e.code === "ER_DUP_ENTRY") {
